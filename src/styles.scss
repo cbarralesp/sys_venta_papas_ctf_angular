@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #111827;
+  --muted: #667085;
+  --border: #e1e5eb;
+  --orange: #ff7600;
+  --orange-soft: #fff3e9;
+  color-scheme: light;
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; background: #f8f9fb; }
+body { min-width: 320px; min-height: 100dvh; margin: 0; background: radial-gradient(circle at 75% 0%, #fff 0, #fafbfc 35%, #f7f8fa 100%); color: var(--ink); }
+button, input, select { font-family: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid rgb(255 118 0 / 25%); outline-offset: 2px; }

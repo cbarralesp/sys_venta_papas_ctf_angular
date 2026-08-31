@@ -1,0 +1,130 @@
+<section class="finance-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Gestión</p>
+      <h1>Finanzas</h1>
+      <p>Resumen de ventas, gastos y rentabilidad del negocio.</p>
+    </div>
+    <div class="period-tabs">
+      @for (item of periodos; track item) {
+        <button
+          class="tab-button"
+          [class.tab-button--active]="periodo() === item"
+          type="button"
+          (click)="seleccionarPeriodo(item)"
+        >
+          {{ item }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span>Ingresos</span>
+      <strong class="kpi-card__value kpi-card__value--positive">{{ formatPrice(totalIngresos()) }}</strong>
+      <small>{{ cantidadVentas() }} ventas</small>
+    </div>
+    <div class="kpi-card">
+      <span>Gastos</span>
+      <strong class="kpi-card__value kpi-card__value--negative">{{ formatPrice(totalGastos()) }}</strong>
+      <small>Costos operativos</small>
+    </div>
+    <div class="kpi-card">
+      <span>Ganancia bruta</span>
+      <strong class="kpi-card__value">{{ formatPrice(gananciaBruta()) }}</strong>
+      <small>Ingresos − costo de productos</small>
+    </div>
+    <div class="kpi-card kpi-card--highlight">
+      <span>Ganancia neta</span>
+      <strong class="kpi-card__value">{{ formatPrice(gananciaNeta()) }}</strong>
+      <small>Margen {{ margenPorcentaje() }}%</small>
+    </div>
+    <div class="kpi-card">
+      <span>Ticket promedio</span>
+      <strong class="kpi-card__value">{{ formatPrice(ticketPromedio()) }}</strong>
+      <small>Por pedido</small>
+    </div>
+  </div>
+
+  <div class="finance-layout">
+    <section class="movements-panel">
+      <header class="panel-heading">
+        <h2>Movimientos</h2>
+        <span>{{ movimientosFiltrados().length }} registros</span>
+      </header>
+
+      <div class="movements-list">
+        @for (movimiento of movimientosFiltrados(); track movimiento.id) {
+          <div class="movement-row">
+            <span class="movement-row__icon" [class.movement-row__icon--gasto]="movimiento.tipo === 'Gasto'" aria-hidden="true">
+              {{ iconoMovimiento(movimiento) }}
+            </span>
+            <div class="movement-row__info">
+              <strong>{{ movimiento.descripcion }}</strong>
+              <span>{{ movimiento.categoria }} · {{ formatearFecha(movimiento.fecha) }}</span>
+            </div>
+            <span class="payment-chip" [class.payment-chip--transfer]="movimiento.formaPago === 'Transferencia'">
+              {{ iconoFormaPago(movimiento.formaPago) }} {{ movimiento.formaPago }}
+            </span>
+            <strong
+              class="movement-row__amount"
+              [class.movement-row__amount--negative]="movimiento.tipo === 'Gasto'"
+            >
+              {{ movimiento.tipo === 'Gasto' ? '−' : '+' }}{{ formatPrice(movimiento.monto) }}
+            </strong>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span aria-hidden="true">💰</span>
+            <strong>No hay movimientos en este período</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <section class="summary-card">
+        <h2>Ventas por categoría</h2>
+        <div class="category-list">
+          @for (item of resumenPorCategoria(); track item.categoria) {
+            <div class="category-row">
+              <div class="category-row__label">
+                <strong>{{ item.categoria }}</strong>
+                <span>{{ formatPrice(item.ingresos) }}</span>
+              </div>
+              <div class="category-row__bar">
+                <div class="category-row__fill" [style.width.%]="porcentajeCategoria(item.ingresos)"></div>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-state empty-state--sm">
+              <strong>Sin ventas registradas</strong>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="summary-card">
+        <h2>Ventas por forma de pago</h2>
+        <div class="payment-summary-list">
+          @for (item of resumenPorFormaPago(); track item.formaPago) {
+            <div class="payment-summary-row">
+              <span class="payment-chip" [class.payment-chip--transfer]="item.formaPago === 'Transferencia'">
+                {{ iconoFormaPago(item.formaPago) }} {{ item.formaPago }}
+              </span>
+              <div>
+                <strong>{{ formatPrice(item.total) }}</strong>
+                <small>{{ item.cantidad }} {{ item.cantidad === 1 ? 'venta' : 'ventas' }}</small>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-state empty-state--sm">
+              <strong>Sin ventas registradas</strong>
+            </div>
+          }
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>

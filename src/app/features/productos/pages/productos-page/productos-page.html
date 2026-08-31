@@ -1,0 +1,234 @@
+<section class="products-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Catálogo</p>
+      <h1>Productos</h1>
+      <p>Gestiona tu catálogo de productos: agrega, edita y controla la disponibilidad.</p>
+    </div>
+    <button class="primary-button new-button" type="button" (click)="startNew()">
+      <span aria-hidden="true">＋</span> Nuevo producto
+    </button>
+  </header>
+
+  <div class="catalog-layout">
+    <aside class="categories-card" aria-label="Categorías de productos">
+      <div class="categories-heading">
+        <h2>Categorías</h2>
+        <div class="category-heading-actions">
+          <button class="manage-category-button" type="button" aria-label="Administrar categorías" title="Administrar categorías" (click)="openCategoryManager()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"/></svg>
+          </button>
+          <button class="add-category-button" type="button" aria-label="Agregar categoría" title="Agregar categoría" (click)="openCategoryModal()">+</button>
+        </div>
+      </div>
+      <div class="category-list">
+        @for (filtro of filtros(); track filtro) {
+          <button
+            class="category-button"
+            [class.category-button--active]="categoriaActiva() === filtro"
+            type="button"
+            (click)="selectCategory(filtro)"
+          >
+            <span class="category-label"><i></i>{{ filtro }}</span>
+            <b>{{ categoryCount(filtro) }}</b>
+          </button>
+        }
+      </div>
+    </aside>
+
+    <article class="product-list-card">
+      <div class="list-heading">
+        <div>
+          <p class="panel-kicker">{{ categoriaActiva() === 'Todos' ? 'Catálogo actual' : categoriaActiva() }}</p>
+          <h2>Listado de productos <b>{{ productosFiltrados().length }}</b></h2>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Producto</th><th>Precio</th><th>Estado</th><th class="actions-title">Acciones</th></tr>
+          </thead>
+          <tbody>
+            @for (producto of productosFiltrados(); track producto.id) {
+              <tr>
+                <td data-label="Producto">
+                  <div class="product-name">
+                    <span class="product-icon" aria-hidden="true">{{ producto.icono }}</span>
+                    <div><strong>{{ producto.nombre }}</strong><small>{{ producto.categoria }}</small></div>
+                  </div>
+                </td>
+                <td data-label="Precio"><strong class="price">{{ formatPrice(producto.precioVenta) }}</strong></td>
+                <td data-label="Estado">
+                  <span class="status" [class.status--inactive]="!producto.disponible">
+                    <i></i>{{ producto.disponible ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td data-label="Acciones">
+                  <div class="row-actions">
+                    <button class="icon-button" type="button" aria-label="Editar producto" title="Editar" (click)="editProduct(producto)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l3.8-.8L19 8a2.1 2.1 0 0 0-3-3L4.8 16.2z"/></svg>
+                    </button>
+                    <button class="icon-button icon-button--danger" type="button" aria-label="Eliminar producto" title="Eliminar" (click)="deleteProduct(producto)">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty-state">
+                  <span aria-hidden="true">📦</span>
+                  <strong>No hay productos en esta categoría</strong>
+                  <button type="button" (click)="startNew()">Agregar producto</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>
+
+@if (modalOpen()) {
+  <div class="modal-layer">
+    <button class="modal-backdrop" type="button" aria-label="Cerrar formulario" (click)="closeModal()"></button>
+    <section class="product-modal" role="dialog" aria-modal="true" [attr.aria-label]="editingId() === null ? 'Nuevo producto' : 'Editar producto'">
+      <header class="modal-heading">
+        <div>
+          <p>{{ editingId() === null ? 'Nuevo producto' : 'Editando producto' }}</p>
+          <h2>{{ editingId() === null ? 'Agregar producto' : 'Editar producto' }}</h2>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="closeModal()">×</button>
+      </header>
+
+      <form [formGroup]="productForm" (ngSubmit)="saveProduct()">
+        <label class="form-field">
+          <span>Nombre del producto</span>
+          <input type="text" formControlName="nombre" placeholder="Ej: Papas fritas grandes" autocomplete="off" />
+          @if (productForm.controls.nombre.touched && productForm.controls.nombre.invalid) {
+            <small>Ingresa un nombre de al menos 2 caracteres.</small>
+          }
+        </label>
+
+        <label class="form-field">
+          <span>Categoría</span>
+          <span class="select-wrap">
+            <select formControlName="categoria">
+              @for (categoria of categorias(); track categoria) {
+                <option [value]="categoria">{{ categoria }}</option>
+              }
+            </select>
+          </span>
+        </label>
+
+        <label class="form-field">
+          <span>Precio de venta</span>
+          <span class="money-input">
+            <b>$</b>
+            <input type="number" formControlName="precioVenta" min="1" inputmode="numeric" placeholder="0" />
+          </span>
+          @if (productForm.controls.precioVenta.touched && productForm.controls.precioVenta.invalid) {
+            <small>El precio debe ser mayor a $0.</small>
+          }
+        </label>
+
+        <label class="availability-row">
+          <span><strong>Disponible</strong><small>Se mostrará en Caja</small></span>
+          <input class="switch-input" type="checkbox" formControlName="disponible" />
+        </label>
+
+        <div class="modal-actions">
+          <button class="secondary-button" type="button" (click)="closeModal()">Cancelar</button>
+          <button class="primary-button" type="submit">{{ editingId() === null ? 'Crear producto' : 'Guardar cambios' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (categoryModalOpen() || categoryManagerOpen() || categoryPendingDelete() !== null) {
+  <div class="modal-layer">
+    <button class="modal-backdrop" type="button" aria-label="Cerrar categorías" (click)="closeCategoryOverlay()"></button>
+
+    @if (categoryModalOpen()) {
+      <section class="product-modal category-modal modal-panel-swap" role="dialog" aria-modal="true" [attr.aria-label]="editingCategory() === null ? 'Nueva categoría' : 'Editar categoría'">
+        <header class="modal-heading">
+          <div>
+            <p>{{ editingCategory() === null ? 'Nueva categoría' : 'Editando categoría' }}</p>
+            <h2>{{ editingCategory() === null ? 'Agregar categoría' : 'Editar categoría' }}</h2>
+          </div>
+          <button class="modal-close" type="button" aria-label="Cerrar" (click)="closeCategoryModal()">×</button>
+        </header>
+
+        <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
+          <label class="form-field">
+            <span>Nombre de la categoría</span>
+            <input type="text" formControlName="nombre" placeholder="Ej: Sándwiches" autocomplete="off" />
+            @if (categoryForm.controls.nombre.touched && categoryForm.controls.nombre.invalid) {
+              <small>Ingresa un nombre de al menos 2 caracteres.</small>
+            }
+            @if (duplicateCategory()) {
+              <small>Esta categoría ya existe.</small>
+            }
+          </label>
+
+          <div class="modal-actions">
+            <button class="secondary-button" type="button" (click)="closeCategoryModal()">Cancelar</button>
+            <button class="primary-button" type="submit">{{ editingCategory() === null ? 'Crear categoría' : 'Guardar cambios' }}</button>
+          </div>
+        </form>
+      </section>
+    } @else if (categoryPendingDelete() !== null) {
+      <section class="product-modal category-delete-modal modal-panel-swap" role="alertdialog" aria-modal="true" aria-label="Eliminar categoría">
+        <div class="delete-confirmation">
+          <span class="delete-confirmation__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+          </span>
+          <h2>Eliminar categoría</h2>
+          <p>¿Seguro que deseas eliminar <strong>“{{ categoryPendingDelete() }}”</strong>? Esta acción no se puede deshacer.</p>
+          <div class="modal-actions">
+            <button class="secondary-button" type="button" (click)="cancelDeleteCategory()">Cancelar</button>
+            <button class="danger-button" type="button" (click)="confirmDeleteCategory()">Eliminar categoría</button>
+          </div>
+        </div>
+      </section>
+    } @else {
+      <section class="product-modal category-manager-modal modal-panel-swap" role="dialog" aria-modal="true" aria-label="Administrar categorías">
+        <header class="modal-heading">
+          <div>
+            <p>Configuración</p>
+            <h2>Administrar categorías</h2>
+          </div>
+          <button class="modal-close" type="button" aria-label="Cerrar" (click)="closeCategoryManager()">×</button>
+        </header>
+
+        <div class="manager-content">
+          <div class="manager-list">
+            @for (categoria of categorias(); track categoria) {
+              <div class="manager-row">
+                <span class="manager-category"><i></i><strong>{{ categoria }}</strong></span>
+                <span class="manager-count">{{ categoryCount(categoria) }} {{ categoryCount(categoria) === 1 ? 'producto' : 'productos' }}</span>
+              <button class="manager-edit" type="button" [attr.aria-label]="'Editar ' + categoria" (click)="editCategory(categoria)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l3.8-.8L19 8a2.1 2.1 0 0 0-3-3L4.8 16.2z"/></svg>
+              </button>
+              <button
+                class="manager-delete"
+                type="button"
+                [disabled]="!canDeleteCategory(categoria)"
+                [attr.aria-label]="'Eliminar ' + categoria"
+                [attr.title]="canDeleteCategory(categoria) ? 'Eliminar categoría' : 'La categoría debe estar vacía para eliminarla'"
+                (click)="requestDeleteCategory(categoria)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+              </button>
+            </div>
+            }
+          </div>
+          <button class="manager-new" type="button" (click)="openCategoryFromManager()"><span>+</span> Nueva categoría</button>
+        </div>
+      </section>
+    }
+  </div>
+}

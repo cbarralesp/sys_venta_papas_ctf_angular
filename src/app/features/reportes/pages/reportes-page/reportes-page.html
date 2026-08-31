@@ -1,0 +1,101 @@
+<section class="reports-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Gestión</p>
+      <h1>Reportes</h1>
+      <p>Analiza el desempeño de ventas y los productos más vendidos.</p>
+    </div>
+    <div class="range-tabs">
+      @for (item of rangos; track item) {
+        <button
+          class="tab-button"
+          [class.tab-button--active]="rango() === item"
+          type="button"
+          (click)="seleccionarRango(item)"
+        >
+          {{ item }}
+        </button>
+      }
+    </div>
+  </header>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span>Ventas totales</span>
+      <strong>{{ formatPrice(totalVentas()) }}</strong>
+      <small>{{ totalPedidos() }} pedidos</small>
+    </div>
+    <div class="kpi-card">
+      <span>Promedio diario</span>
+      <strong>{{ formatPrice(promedioDiario()) }}</strong>
+      <small>Por día</small>
+    </div>
+    <div class="kpi-card">
+      <span>Ticket promedio</span>
+      <strong>{{ formatPrice(ticketPromedio()) }}</strong>
+      <small>Por pedido</small>
+    </div>
+    <div class="kpi-card kpi-card--highlight">
+      <span>Mejor día</span>
+      @if (mejorDia(); as dia) {
+        <strong>{{ formatPrice(dia.totalVentas) }}</strong>
+        <small>{{ formatearFecha(dia.fecha) }}</small>
+      } @else {
+        <strong>—</strong>
+        <small>Sin datos</small>
+      }
+    </div>
+  </div>
+
+  <div class="reports-layout">
+    <section class="chart-panel">
+      <header class="panel-heading">
+        <h2>Ventas por día</h2>
+        <span>{{ ventasEnRango().length }} días</span>
+      </header>
+
+      <div class="bar-chart">
+        @for (venta of ventasEnRango(); track venta.fecha) {
+          <div class="bar-chart__column">
+            <div class="bar-chart__track">
+              <div class="bar-chart__fill" [style.height.%]="porcentajeDelMaximo(venta.totalVentas)"></div>
+            </div>
+            <span class="bar-chart__value">{{ formatPrice(venta.totalVentas) }}</span>
+            <span class="bar-chart__label">{{ formatearFecha(venta.fecha) }}</span>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span aria-hidden="true">📊</span>
+            <strong>No hay datos de ventas en este período</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <section class="ranking-card">
+        <h2>Productos más vendidos</h2>
+        <div class="ranking-list">
+          @for (producto of productosOrdenados(); track producto.nombre; let indice = $index) {
+            <div class="ranking-row">
+              <span class="ranking-row__position">{{ indice + 1 }}</span>
+              <span class="ranking-row__icon" aria-hidden="true">{{ producto.icono }}</span>
+              <div class="ranking-row__info">
+                <strong>{{ producto.nombre }}</strong>
+                <span>{{ producto.cantidadVendida }} vendidos</span>
+              </div>
+              <div class="ranking-row__amount">
+                <strong>{{ formatPrice(producto.totalGenerado) }}</strong>
+                <small>{{ porcentajeDelTotalProductos(producto.totalGenerado) }}%</small>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-state empty-state--sm">
+              <strong>Sin productos vendidos</strong>
+            </div>
+          }
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>

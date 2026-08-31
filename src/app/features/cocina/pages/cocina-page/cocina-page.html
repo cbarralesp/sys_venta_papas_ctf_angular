@@ -1,0 +1,162 @@
+<section class="kitchen-page">
+  <header class="page-heading">
+    <div>
+      <h1>Cocina</h1>
+      <p>Gestiona la preparación de los pedidos en tiempo real</p>
+    </div>
+    <div class="heading-actions">
+      <button class="date-picker" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        <span>Hoy, 24 de mayo</span>
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="active-badge">
+        <i></i>
+        {{ pedidosActivos() }} pedidos activos
+      </div>
+    </div>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-card stat-card--pending">
+      <span class="stat-card__icon" aria-hidden="true">📋</span>
+      <div>
+        <strong>Pendientes</strong>
+        <b>{{ pendientes().length }}</b>
+        <small>Esperando preparación</small>
+      </div>
+    </div>
+    <div class="stat-card stat-card--preparing">
+      <span class="stat-card__icon" aria-hidden="true">🍳</span>
+      <div>
+        <strong>En preparación</strong>
+        <b>{{ enPreparacion().length }}</b>
+        <small>Siendo preparados</small>
+      </div>
+    </div>
+    <div class="stat-card stat-card--ready">
+      <span class="stat-card__icon" aria-hidden="true">✅</span>
+      <div>
+        <strong>Listos</strong>
+        <b>{{ listos().length }}</b>
+        <small>Listos para entregar</small>
+      </div>
+    </div>
+    <div class="stat-card stat-card--done">
+      <span class="stat-card__icon" aria-hidden="true">🕒</span>
+      <div>
+        <strong>Completados hoy</strong>
+        <b>{{ completadosHoy() }}</b>
+        <small>Pedidos entregados</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="board">
+    <section class="board-column board-column--pending">
+      <h2>Pendientes ({{ pendientes().length }})</h2>
+      <div class="board-column__body">
+        @for (pedido of pendientes(); track pedido.id) {
+          <article class="order-card">
+            <header>
+              <strong>#{{ pedido.numero }}</strong>
+              <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
+            </header>
+            <div class="order-card__items">
+              <span class="order-card__icon" aria-hidden="true">{{ pedido.items[0].icono }}</span>
+              <ul>
+                @for (item of pedido.items; track item.nombre) {
+                  <li>{{ item.cantidad }} {{ item.nombre }}</li>
+                }
+              </ul>
+            </div>
+            <div class="order-card__meta">
+              <span>Solicitado por: {{ pedido.solicitadoPor }}</span>
+              <b class="badge badge--pending">PENDIENTE</b>
+            </div>
+            <button class="action-button action-button--start" type="button" (click)="comenzarPreparacion(pedido)">
+              Comenzar preparación
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="board-column board-column--preparing">
+      <h2>En preparación ({{ enPreparacion().length }})</h2>
+      <div class="board-column__body">
+        @for (pedido of enPreparacion(); track pedido.id) {
+          <article class="order-card">
+            <header>
+              <strong>#{{ pedido.numero }}</strong>
+              <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
+            </header>
+            <div class="order-card__items">
+              <span class="order-card__icon" aria-hidden="true">{{ pedido.items[0].icono }}</span>
+              <ul>
+                @for (item of pedido.items; track item.nombre) {
+                  <li>{{ item.cantidad }} {{ item.nombre }}</li>
+                }
+              </ul>
+            </div>
+            <div class="order-card__meta">
+              <span>Solicitado por: {{ pedido.solicitadoPor }}</span>
+              <b class="badge badge--preparing">EN PREPARACIÓN</b>
+            </div>
+            <div class="timer-box">
+              <span aria-hidden="true">🍳</span>
+              <div>
+                <strong>Preparando...</strong>
+                <small>Tiempo transcurrido</small>
+              </div>
+              <b>{{ tiempoTranscurrido(pedido) }}</b>
+            </div>
+            <button class="action-button action-button--ready" type="button" (click)="marcarComoListo(pedido)">
+              Marcar como listo
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            </button>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="board-column board-column--ready">
+      <h2>Listos ({{ listos().length }})</h2>
+      <div class="board-column__body">
+        @for (pedido of listos(); track pedido.id) {
+          <article class="order-card order-card--ready">
+            <header>
+              <strong>#{{ pedido.numero }}</strong>
+              <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
+            </header>
+            <div class="order-card__items">
+              <span class="order-card__icon" aria-hidden="true">{{ pedido.items[0].icono }}</span>
+              <ul>
+                @for (item of pedido.items; track item.nombre) {
+                  <li>{{ item.cantidad }} {{ item.nombre }}</li>
+                }
+              </ul>
+            </div>
+            <div class="order-card__meta">
+              <span>Listo desde: {{ pedido.horaListo ? formatearHora(pedido.horaListo) : '' }}</span>
+              <b class="badge badge--ready">LISTO</b>
+            </div>
+            <button class="action-button action-button--deliver" type="button" (click)="entregarPedido(pedido)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Entregar pedido
+            </button>
+          </article>
+        }
+      </div>
+    </section>
+  </div>
+
+  <div class="kitchen-hint">
+    <span aria-hidden="true">ℹ️</span>
+    <div>
+      <strong>Los pedidos creados en Caja aparecen automáticamente en Cocina.</strong>
+      <p>Marca los pedidos como listos cuando estén preparados para su entrega.</p>
+    </div>
+  </div>
+</section>

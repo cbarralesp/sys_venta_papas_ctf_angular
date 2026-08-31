@@ -1,0 +1,53 @@
+<section class="screen-page" [class.screen-page--fullscreen]="pantallaCompleta()">
+  <button class="fullscreen-toggle" type="button" (click)="toggleFullscreen()" [attr.aria-label]="pantallaCompleta() ? 'Salir de pantalla completa' : 'Ver en pantalla completa'">
+    @if (pantallaCompleta()) {
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4"/></svg>
+      Salir de pantalla completa
+    } @else {
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      Ver en pantalla completa
+    }
+  </button>
+
+  <div class="screen-board">
+    <header class="screen-heading">
+      <span aria-hidden="true">🍟</span>
+      <h1>Pedidos de papas fritas</h1>
+    </header>
+
+    <div class="screen-row screen-row--preparing">
+      <div class="screen-row__label">
+        <span aria-hidden="true">🍳</span>
+        <strong>Se está preparando</strong>
+      </div>
+      <div class="screen-row__tickets">
+        @for (pedido of enPreparacion(); track pedido.id) {
+          <div class="ticket ticket--preparing">#{{ pedido.numero }}</div>
+        } @empty {
+          <p class="screen-empty">No hay pedidos en preparación</p>
+        }
+      </div>
+    </div>
+
+    <div class="screen-row screen-row--ready">
+      <div class="screen-row__label">
+        <span aria-hidden="true">✅</span>
+        <strong>Listos para retirar</strong>
+      </div>
+      <div class="screen-row__tickets">
+        @for (pedido of listos(); track pedido.id) {
+          <div class="ticket ticket--ready" [class.ticket--highlight]="pedido.numero === ultimoListoNumero()">
+            #{{ pedido.numero }}
+          </div>
+        } @empty {
+          <p class="screen-empty">No hay pedidos listos</p>
+        }
+      </div>
+    </div>
+
+    <footer class="screen-footer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      Mire la pantalla para saber cuándo retirar su pedido
+    </footer>
+  </div>
+</section>

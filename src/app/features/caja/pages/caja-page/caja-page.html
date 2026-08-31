@@ -1,0 +1,157 @@
+<section class="cash-page">
+  <header class="page-heading">
+    <div>
+      <h1>Caja</h1>
+      <p>Crea un nuevo pedido y envíalo a cocina</p>
+    </div>
+    <div class="stats">
+      <div class="stat-card">
+        <span>Pedidos hoy</span>
+        <strong>{{ pedidosHoy() }}</strong>
+      </div>
+      <div class="stat-card stat-card--sales">
+        <span>Ventas hoy</span>
+        <strong>{{ formatPrice(ventasHoy()) }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <div class="cash-layout">
+    <section class="catalog-panel">
+      <div class="category-tabs">
+        @for (filtro of filtros(); track filtro) {
+          <button
+            class="tab-button"
+            [class.tab-button--active]="categoriaActiva() === filtro"
+            type="button"
+            (click)="selectCategory(filtro)"
+          >
+            {{ filtro }}
+          </button>
+        }
+      </div>
+
+      <div class="product-grid">
+        @for (producto of productosFiltrados(); track producto.id) {
+          <button class="product-card" type="button" (click)="agregarProducto(producto)">
+            <span class="product-card__add" aria-hidden="true">+</span>
+            <span class="product-card__icon" aria-hidden="true">{{ producto.icono }}</span>
+            <strong>{{ producto.nombre }}</strong>
+            <span class="product-card__price">{{ formatPrice(producto.precioVenta) }}</span>
+            @if (cantidadEnCarrito(producto) > 0) {
+              <span class="product-card__badge">{{ cantidadEnCarrito(producto) }}</span>
+            }
+          </button>
+        } @empty {
+          <div class="empty-state">
+            <span aria-hidden="true">🍽️</span>
+            <strong>No hay productos disponibles en esta categoría</strong>
+          </div>
+        }
+      </div>
+
+      <div class="kitchen-hint">
+        <span aria-hidden="true">👨‍🍳</span>
+        <div>
+          <strong>Al crear el pedido será enviado automáticamente a cocina</strong>
+          <p>El pedido aparecerá en la pantalla de cocina</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="order-panel">
+      <header class="order-heading">
+        <div>
+          <p>Pedido nuevo</p>
+          <h2>#{{ numeroPedidoActual() }}</h2>
+        </div>
+        <button class="clear-button" type="button" (click)="limpiarPedido()" [disabled]="carrito().length === 0">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+          Limpiar pedido
+        </button>
+      </header>
+
+      <div class="order-items">
+        @for (item of carrito(); track item.productoId) {
+          <div class="order-item">
+            <span class="order-item__icon" aria-hidden="true">{{ item.icono }}</span>
+            <div class="order-item__info">
+              <strong>{{ item.nombre }}</strong>
+              <span class="order-item__price">{{ formatPrice(item.precioUnitario * item.cantidad) }}</span>
+            </div>
+            <div class="order-item__controls">
+              <button type="button" aria-label="Restar" (click)="decrementar(item.productoId)">−</button>
+              <b>{{ item.cantidad }}</b>
+              <button type="button" aria-label="Sumar" (click)="incrementar(item.productoId)">+</button>
+              <button class="order-item__delete" type="button" aria-label="Eliminar" (click)="eliminarItem(item.productoId)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="order-empty">
+            <span aria-hidden="true">🛒</span>
+            <strong>Agrega productos al pedido</strong>
+          </div>
+        }
+      </div>
+
+      @if (carrito().length > 0) {
+        <div class="order-subtotal">
+          <span>{{ totalItems() }} {{ totalItems() === 1 ? 'producto' : 'productos' }}</span>
+          <div>
+            <small>Subtotal</small>
+            <strong>{{ formatPrice(subtotal()) }}</strong>
+          </div>
+        </div>
+
+        <label class="order-field">
+          <span>Nota del pedido (opcional)</span>
+          <textarea
+            rows="2"
+            placeholder="Ej: Sin sal, extra ketchup, etc."
+            [value]="nota()"
+            (input)="actualizarNota($any($event.target).value)"
+          ></textarea>
+        </label>
+
+        <div class="order-field">
+          <span>Forma de pago</span>
+          <div class="payment-methods">
+            <button
+              class="payment-button"
+              [class.payment-button--active]="formaPago() === 'Efectivo'"
+              type="button"
+              (click)="seleccionarFormaPago('Efectivo')"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+              Efectivo
+            </button>
+            <button
+              class="payment-button"
+              [class.payment-button--active]="formaPago() === 'Transferencia'"
+              type="button"
+              (click)="seleccionarFormaPago('Transferencia')"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l4 4-4 4M21 7H7M7 21l-4-4 4-4M3 17h14"/></svg>
+              Transferencia
+            </button>
+          </div>
+        </div>
+
+        <div class="order-total">
+          <span>Total a cobrar</span>
+          <strong>{{ formatPrice(subtotal()) }}</strong>
+        </div>
+
+        <button class="submit-button" type="button" (click)="crearPedido()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+          <span>
+            Crear pedido y enviar a cocina
+            <small>El pedido se enviará a cocina</small>
+          </span>
+        </button>
+      }
+    </aside>
+  </div>
+</section>

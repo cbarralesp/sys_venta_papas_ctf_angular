@@ -1,0 +1,110 @@
+<section class="settings-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Configuración</p>
+      <h1>Ajustes</h1>
+      <p>Personaliza la información y el comportamiento de tu negocio.</p>
+    </div>
+    @if (guardadoRecientemente()) {
+      <div class="saved-badge">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        Cambios guardados
+      </div>
+    }
+  </header>
+
+  <div class="settings-layout">
+    <section class="settings-card">
+      <header class="card-heading">
+        <span class="card-heading__icon" aria-hidden="true">🏪</span>
+        <div>
+          <h2>Información del negocio</h2>
+          <p>Este nombre y logo se muestran en el panel lateral.</p>
+        </div>
+      </header>
+
+      <form class="settings-form" [formGroup]="informacionForm">
+        <label class="form-field">
+          <span>Nombre del negocio</span>
+          <input type="text" formControlName="nombre" placeholder="Ej: Panel del negocio" autocomplete="off" />
+        </label>
+
+        <label class="form-field">
+          <span>Subtítulo</span>
+          <input type="text" formControlName="subtitulo" placeholder="Ej: Sistema de ventas" autocomplete="off" />
+        </label>
+
+        <label class="form-field form-field--icon">
+          <span>Ícono</span>
+          <input type="text" formControlName="icono" maxlength="2" autocomplete="off" />
+        </label>
+      </form>
+    </section>
+
+    <section class="settings-card">
+      <header class="card-heading">
+        <span class="card-heading__icon" aria-hidden="true">⚙️</span>
+        <div>
+          <h2>Preferencias operativas</h2>
+          <p>Configura moneda, impuestos y tiempos de preparación.</p>
+        </div>
+      </header>
+
+      <form class="settings-form" [formGroup]="operativasForm">
+        <label class="form-field">
+          <span>Moneda</span>
+          <span class="select-wrap">
+            <select formControlName="moneda">
+              <option value="CLP">Peso chileno (CLP)</option>
+              <option value="USD">Dólar (USD)</option>
+              <option value="EUR">Euro (EUR)</option>
+            </select>
+          </span>
+        </label>
+
+        <label class="form-field">
+          <span>Impuesto (%)</span>
+          <input type="number" formControlName="impuestoPorcentaje" min="0" max="100" inputmode="numeric" />
+        </label>
+
+        <label class="form-field">
+          <span>Tiempo estimado de preparación (min)</span>
+          <input type="number" formControlName="tiempoEstimadoPreparacionMin" min="1" inputmode="numeric" />
+        </label>
+      </form>
+    </section>
+
+    <section class="settings-card">
+      <header class="card-heading">
+        <span class="card-heading__icon" aria-hidden="true">🔔</span>
+        <div>
+          <h2>Notificaciones</h2>
+          <p>Controla las alertas de Caja y Cocina.</p>
+        </div>
+      </header>
+
+      <form class="settings-form" [formGroup]="notificacionesForm">
+        <label class="toggle-row">
+          <span><strong>Sonido al recibir un pedido nuevo</strong><small>Se reproduce en Caja y Cocina</small></span>
+          <input class="switch-input" type="checkbox" formControlName="sonidoNuevoPedido" />
+        </label>
+
+        <label class="toggle-row">
+          <span><strong>Alertar pedidos demorados</strong><small>Resalta pedidos que exceden el tiempo estimado</small></span>
+          <input class="switch-input" type="checkbox" formControlName="alertaPedidoDemorado" />
+        </label>
+
+        @if (notificacionesForm.controls.alertaPedidoDemorado.value) {
+          <label class="form-field">
+            <span>Minutos para considerar demora</span>
+            <input type="number" formControlName="minutosParaAlertaDemora" min="1" inputmode="numeric" />
+          </label>
+        }
+      </form>
+    </section>
+  </div>
+
+  <div class="settings-actions">
+    <button class="primary-button" type="button" (click)="guardarCambios()">Guardar cambios</button>
+  </div>
+</section>
