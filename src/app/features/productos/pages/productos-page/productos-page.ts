@@ -111,11 +111,11 @@ export class Productos {
     this.categoryPendingDelete.set(null);
   }
 
-  confirmDeleteCategory(): void {
+  async confirmDeleteCategory(): Promise<void> {
     const categoria = this.categoryPendingDelete();
     if (categoria === null || !this.canDeleteCategory(categoria)) return;
 
-    this.productosStore.eliminarCategoria(categoria);
+    if (!await this.productosStore.eliminarCategoria(categoria)) return;
     this.categoryManagerOpen.set(true);
     this.categoryPendingDelete.set(null);
   }
@@ -127,7 +127,7 @@ export class Productos {
     this.categoryForm.reset({ nombre: '' });
   }
 
-  saveCategory(): void {
+  async saveCategory(): Promise<void> {
     if (this.categoryForm.invalid) {
       this.categoryForm.markAllAsTouched();
       return;
@@ -143,9 +143,9 @@ export class Productos {
     }
 
     if (currentCategory === null) {
-      this.productosStore.crearCategoria(categoryName);
+      if (!await this.productosStore.crearCategoria(categoryName)) return;
     } else {
-      this.productosStore.editarCategoria(currentCategory, categoryName);
+      if (!await this.productosStore.editarCategoria(currentCategory, categoryName)) return;
     }
     this.closeCategoryModal();
   }
@@ -167,7 +167,7 @@ export class Productos {
     this.productForm.reset({ nombre: '', categoria: 'Papas fritas', precioVenta: 0, disponible: true });
   }
 
-  saveProduct(): void {
+  async saveProduct(): Promise<void> {
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
       return;
@@ -177,9 +177,9 @@ export class Productos {
     const id = this.editingId();
 
     if (id === null) {
-      this.productosStore.crearProducto(value);
+      if (!await this.productosStore.crearProducto(value)) return;
     } else {
-      this.productosStore.editarProducto(id, value);
+      if (!await this.productosStore.editarProducto(id, value)) return;
     }
 
     this.closeModal();

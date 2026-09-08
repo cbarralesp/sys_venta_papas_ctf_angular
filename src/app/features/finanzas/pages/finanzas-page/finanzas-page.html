@@ -1,21 +1,30 @@
 <section class="finance-page">
+  @if (finanzasStore.cargando()) {
+    <p role="status">Cargando resumen financiero...</p>
+  }
+  @if (finanzasStore.error(); as mensaje) {
+    <p role="alert">{{ mensaje }}</p>
+  }
   <header class="page-heading">
     <div>
       <p class="eyebrow">Gestión</p>
       <h1>Finanzas</h1>
       <p>Resumen de ventas, gastos y rentabilidad del negocio.</p>
     </div>
-    <div class="period-tabs">
-      @for (item of periodos; track item) {
-        <button
-          class="tab-button"
-          [class.tab-button--active]="periodo() === item"
-          type="button"
-          (click)="seleccionarPeriodo(item)"
-        >
-          {{ item }}
-        </button>
-      }
+    <div class="heading-actions">
+      <div class="period-tabs">
+        @for (item of periodos; track item) {
+          <button
+            class="tab-button"
+            [class.tab-button--active]="periodo() === item"
+            type="button"
+            (click)="seleccionarPeriodo(item)"
+          >
+            {{ item }}
+          </button>
+        }
+      </div>
+      <button class="new-expense-button" type="button" (click)="abrirGasto()">＋ Nuevo gasto</button>
     </div>
   </header>
 
@@ -28,7 +37,7 @@
     <div class="kpi-card">
       <span>Gastos</span>
       <strong class="kpi-card__value kpi-card__value--negative">{{ formatPrice(totalGastos()) }}</strong>
-      <small>Costos operativos</small>
+      <small>Gastos registrados</small>
     </div>
     <div class="kpi-card">
       <span>Ganancia bruta</span>
@@ -73,6 +82,11 @@
             >
               {{ movimiento.tipo === 'Gasto' ? '−' : '+' }}{{ formatPrice(movimiento.monto) }}
             </strong>
+            @if (movimiento.tipo === 'Gasto') {
+              <button class="delete-expense-button" type="button" aria-label="Eliminar gasto" title="Eliminar gasto" (click)="eliminarGasto(movimiento)">×</button>
+            } @else {
+              <span class="movement-action-space"></span>
+            }
           </div>
         } @empty {
           <div class="empty-state">
@@ -128,3 +142,34 @@
     </aside>
   </div>
 </section>
+
+@if (gastoModalOpen()) {
+  <div class="modal-layer">
+    <button class="modal-backdrop" type="button" aria-label="Cerrar formulario" (click)="cerrarGasto()"></button>
+    <section class="expense-modal" role="dialog" aria-modal="true" aria-label="Registrar gasto">
+      <header class="modal-heading">
+        <div><p>Finanzas</p><h2>Registrar gasto</h2></div>
+        <button type="button" aria-label="Cerrar" (click)="cerrarGasto()">×</button>
+      </header>
+      <form [formGroup]="gastoForm" (ngSubmit)="guardarGasto()">
+        @if (finanzasStore.error(); as mensaje) { <p class="form-error" role="alert">{{ mensaje }}</p> }
+        <fieldset [disabled]="finanzasStore.guardando()">
+          <label><span>Descripción</span><input type="text" formControlName="descripcion" placeholder="Ej: Compra de aceite" autocomplete="off" /></label>
+          <div class="form-grid">
+            <label><span>Categoría</span><select formControlName="categoria">@for (categoria of categoriasGasto; track categoria) { <option [value]="categoria">{{ categoria }}</option> }</select></label>
+            <label><span>Forma de pago</span><select formControlName="formaPago"><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></label>
+          </div>
+          <div class="form-grid">
+            <label><span>Monto</span><input type="number" formControlName="monto" min="1" inputmode="numeric" /></label>
+            <label><span>Fecha</span><input type="date" formControlName="fecha" /></label>
+          </div>
+          @if (gastoForm.touched && gastoForm.invalid) { <p class="form-error">Completa todos los campos y usa un monto mayor a cero.</p> }
+          <div class="modal-actions">
+            <button class="cancel-button" type="button" (click)="cerrarGasto()">Cancelar</button>
+            <button class="new-expense-button" type="submit">{{ finanzasStore.guardando() ? 'Guardando...' : 'Registrar gasto' }}</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  </div>
+}

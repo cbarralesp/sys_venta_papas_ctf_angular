@@ -1,162 +1,140 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { CrearPedidoCommand, EstadoPedido, PedidoGestion } from '../../features/pedidos/domain/pedido-gestion.model';
+import { PedidosRepository } from '../../features/pedidos/domain/pedidos.repository';
+import { apiErrorMessage } from './api-error-message';
 
-import { EstadoPedido, PedidoGestion } from '../../features/pedidos/domain/pedido-gestion.model';
-
-/**
- * Servicio raíz singleton que actúa como fuente de verdad compartida para todos
- * los pedidos del sistema. Los módulos Caja, Cocina, Pedidos, Finanzas y Reportes
- * leen y escriben a través de este servicio para mantenerse sincronizados.
- */
 @Injectable({ providedIn: 'root' })
 export class PedidosService {
-  private readonly _pedidos = signal<PedidoGestion[]>(this.buildSeedData());
+  private readonly repository = inject(PedidosRepository);
+  private readonly _pedidos = signal<PedidoGestion[]>([]);
+  private readonly cargaInicial: Promise<boolean>;
 
-  /** Signal de solo lectura con todos los pedidos del sistema */
   readonly pedidos = this._pedidos.asReadonly();
+  readonly cargando = signal(false);
+  readonly guardando = signal(false);
+  readonly error = signal<string | null>(null);
 
-  /** Próximo ID disponible (max actual + 1) */
-  readonly nextId = computed(() => {
-    const ids = this._pedidos().map((p) => p.id);
-    return ids.length === 0 ? 1 : Math.max(...ids) + 1;
-  });
-
-  /** Próximo número de pedido formateado (ej: "063") */
-  readonly nextNumero = computed(() => String(this.nextId()).padStart(3, '0'));
-
-  /** Agrega un nuevo pedido al sistema */
-  agregar(pedido: PedidoGestion): void {
-    this._pedidos.update((lista) => [...lista, pedido]);
+  constructor() {
+    this.cargaInicial = this.cargar();
   }
 
-  /** Actualiza el estado de un pedido por ID */
-  actualizarEstado(id: number, estado: EstadoPedido): void {
-    this._pedidos.update((lista) =>
-      lista.map((p) => (p.id === id ? { ...p, estado } : p)),
-    );
+  async cargar(): Promise<boolean> {
+    if (this.cargando() || this.guardando()) return false;
+    this.cargando.set(true);
+    this.error.set(null);
+    try {
+      this._pedidos.set(await firstValueFrom(this.repository.listar()));
+      return true;
+    } catch (error) {
+      this.error.set(apiErrorMessage(error, 'No se pudieron cargar los pedidos. Verifica la conexion.'));
+      return false;
+    } finally {
+      this.cargando.set(false);
+    }
   }
 
-  private buildSeedData(): PedidoGestion[] {
-    const ahora = new Date();
-    const haceMinutos = (m: number) => new Date(ahora.getTime() - m * 60_000);
+  async buscarPorId(id: number): Promise<boolean> {
+    await this.cargaInicial;
+    try {
+      const pedido = await firstValueFrom(this.repository.buscarPorId(id));
+      this._pedidos.update((lista) => {
+        const existe = lista.some((actual) => actual.id === id);
+        return existe
+          ? lista.map((actual) => actual.id === id ? pedido : actual)
+          : [pedido, ...lista];
+      });
+      return true;
+    } catch (error) {
+      this.error.set(apiErrorMessage(error, 'No se pudo consultar el detalle del pedido.'));
+      return false;
+    }
+  }
 
-    return [
-      {
-        id: 62,
-        numero: '062',
-        items: [
-          { nombre: 'Papas fritas grandes', cantidad: 1, precioUnitario: 7500, costoUnitario: 1800, icono: '🍟' },
-          { nombre: 'Bebida', cantidad: 1, precioUnitario: 1000, costoUnitario: 700, icono: '🥤' },
-        ],
-        formaPago: 'Efectivo',
-        tipoEntrega: 'Para llevar',
-        notas: 'Sin sal',
-        subtotal: 8500,
-        total: 8500,
-        estado: 'Pendiente',
-        creadoEn: haceMinutos(1),
-      },
-      {
-        id: 61,
-        numero: '061',
-        items: [
-          { nombre: 'Papas fritas medianas', cantidad: 2, precioUnitario: 3000, costoUnitario: 1500, icono: '🍟' },
-        ],
-        formaPago: 'Transferencia',
-        tipoEntrega: 'Para llevar',
-        notas: '',
-        subtotal: 6000,
-        total: 6000,
-        estado: 'En preparación',
-        creadoEn: haceMinutos(5),
-      },
-      {
-        id: 60,
-        numero: '060',
-        items: [
-          { nombre: 'Handroll pollo', cantidad: 1, precioUnitario: 4000, costoUnitario: 1800, icono: '🍙' },
-          { nombre: 'Bebida', cantidad: 1, precioUnitario: 1500, costoUnitario: 700, icono: '🥤' },
-        ],
-        formaPago: 'Efectivo',
-        tipoEntrega: 'En local',
-        notas: '',
-        subtotal: 7000,
-        total: 7000,
-        estado: 'Listo',
-        creadoEn: haceMinutos(8),
-      },
-      {
-        id: 59,
-        numero: '059',
-        items: [
-          { nombre: 'Papas fritas grandes', cantidad: 2, precioUnitario: 4000, costoUnitario: 1800, icono: '🍟' },
-          { nombre: 'Handroll camarón', cantidad: 1, precioUnitario: 3500, costoUnitario: 2000, icono: '🍙' },
-        ],
-        formaPago: 'Transferencia',
-        tipoEntrega: 'Para llevar',
-        notas: '',
-        subtotal: 11500,
-        total: 11500,
-        estado: 'Entregado',
-        creadoEn: haceMinutos(12),
-      },
-      {
-        id: 58,
-        numero: '058',
-        items: [{ nombre: 'Handroll camarón', cantidad: 1, precioUnitario: 5500, costoUnitario: 2000, icono: '🍙' }],
-        formaPago: 'Efectivo',
-        tipoEntrega: 'En local',
-        notas: '',
-        subtotal: 5500,
-        total: 5500,
-        estado: 'Entregado',
-        creadoEn: haceMinutos(18),
-      },
-      {
-        id: 57,
-        numero: '057',
-        items: [
-          { nombre: 'Papas fritas chicas', cantidad: 1, precioUnitario: 2000, costoUnitario: 900, icono: '🍟' },
-          { nombre: 'Bebida', cantidad: 1, precioUnitario: 1500, costoUnitario: 700, icono: '🥤' },
-        ],
-        formaPago: 'Transferencia',
-        tipoEntrega: 'Para llevar',
-        notas: 'Cliente canceló el pedido',
-        subtotal: 6500,
-        total: 6500,
-        estado: 'Cancelado',
-        creadoEn: haceMinutos(20),
-      },
-      {
-        id: 56,
-        numero: '056',
-        items: [
-          { nombre: 'Papas fritas medianas', cantidad: 1, precioUnitario: 3500, costoUnitario: 1500, icono: '🍟' },
-          { nombre: 'Handroll pollo', cantidad: 1, precioUnitario: 4000, costoUnitario: 1800, icono: '🍙' },
-          { nombre: 'Bebida', cantidad: 1, precioUnitario: 1500, costoUnitario: 700, icono: '🥤' },
-        ],
-        formaPago: 'Efectivo',
-        tipoEntrega: 'En local',
-        notas: '',
-        subtotal: 9000,
-        total: 9000,
-        estado: 'Listo',
-        creadoEn: haceMinutos(25),
-      },
-      {
-        id: 55,
-        numero: '055',
-        items: [
-          { nombre: 'Papas fritas grandes', cantidad: 1, precioUnitario: 4500, costoUnitario: 1800, icono: '🍟' },
-          { nombre: 'Bebida', cantidad: 1, precioUnitario: 1500, costoUnitario: 700, icono: '🥤' },
-        ],
-        formaPago: 'Efectivo',
-        tipoEntrega: 'Para llevar',
-        notas: '',
-        subtotal: 6000,
-        total: 6000,
-        estado: 'Entregado',
-        creadoEn: haceMinutos(33),
-      },
-    ];
+  async crear(command: CrearPedidoCommand): Promise<boolean> {
+    await this.cargaInicial;
+    if (this.guardando()) return false;
+    this.guardando.set(true);
+    this.error.set(null);
+    try {
+      const pedido = await firstValueFrom(this.repository.crear(command));
+      this._pedidos.update((lista) =>
+        lista.some((actual) => actual.id === pedido.id) ? lista : [pedido, ...lista],
+      );
+      return true;
+    } catch (error) {
+      this.error.set(apiErrorMessage(error, 'No se pudo crear el pedido. Puedes reintentar sin duplicarlo.'));
+      return false;
+    } finally {
+      this.guardando.set(false);
+    }
+  }
+
+  async actualizarEstado(id: number, estado: EstadoPedido): Promise<boolean> {
+    await this.cargaInicial;
+    if (this.guardando()) return false;
+    const actual = this._pedidos().find((pedido) => pedido.id === id);
+    if (!actual) {
+      this.error.set('Pedido no encontrado. Actualiza la lista.');
+      return false;
+    }
+    this.guardando.set(true);
+    this.error.set(null);
+    try {
+      const actualizado = await firstValueFrom(
+        this.repository.actualizarEstado(id, estado, actual.version ?? 0),
+      );
+      this._pedidos.update((lista) =>
+        lista.map((pedido) => pedido.id === id ? actualizado : pedido),
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        try {
+          this._pedidos.set(await firstValueFrom(this.repository.listar()));
+        } catch {
+          // Se conserva la lista actual si también falla la recarga.
+        }
+        this.error.set('El pedido cambió en otra pantalla. Se actualizó la lista.');
+      } else {
+        this.error.set(apiErrorMessage(error, 'No se pudo actualizar el estado del pedido.'));
+      }
+      return false;
+    } finally {
+      this.guardando.set(false);
+    }
+  }
+
+  async cancelar(id: number, motivo: string): Promise<boolean> {
+    await this.cargaInicial;
+    if (this.guardando()) return false;
+    const actual = this._pedidos().find((pedido) => pedido.id === id);
+    if (!actual) return false;
+    this.guardando.set(true);
+    this.error.set(null);
+    try {
+      const cancelado = await firstValueFrom(this.repository.cancelar(id, motivo, actual.version ?? 0));
+      this._pedidos.update((lista) => lista.map((pedido) => pedido.id === id ? cancelado : pedido));
+      return true;
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 409) {
+        await this.cargarDespuesDeConflicto();
+        this.error.set('El pedido cambió o ya no puede anularse. Se actualizó la lista.');
+      } else {
+        this.error.set(apiErrorMessage(error, 'No se pudo anular el pedido.'));
+      }
+      return false;
+    } finally {
+      this.guardando.set(false);
+    }
+  }
+
+  private async cargarDespuesDeConflicto(): Promise<void> {
+    try {
+      this._pedidos.set(await firstValueFrom(this.repository.listar()));
+    } catch {
+      // Se conserva la lista actual si también falla la recarga.
+    }
   }
 }

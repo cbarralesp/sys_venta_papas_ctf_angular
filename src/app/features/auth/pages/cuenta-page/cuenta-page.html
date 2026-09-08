@@ -1,0 +1,55 @@
+<section class="account-page">
+  <header class="page-heading">
+    <p class="eyebrow">Seguridad</p>
+    <h1>Mi cuenta</h1>
+    <p>Actualiza tu clave personal sin afectar los permisos de tu usuario.</p>
+  </header>
+
+  <div class="account-layout">
+    <aside class="identity-card">
+      <span class="identity-card__avatar" aria-hidden="true">{{ usuario()?.nombre?.charAt(0) ?? '?' }}</span>
+      <div>
+        <strong>{{ usuario()?.nombre }}</strong>
+        <span>@{{ usuario()?.usuario }}</span>
+      </div>
+      <small>{{ usuario()?.rol }}</small>
+    </aside>
+
+    <form class="password-card" [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="card-heading">
+        <span aria-hidden="true">🔐</span>
+        <div>
+          <h2>Cambiar contraseña</h2>
+          <p>Usa entre 8 y 72 caracteres.</p>
+        </div>
+      </div>
+
+      @if (store.error()) {
+        <p class="status status--error" role="alert">{{ store.error() }}</p>
+      }
+      @if (store.actualizado()) {
+        <p class="status status--success" role="status">Contraseña actualizada correctamente.</p>
+      }
+
+      <label>
+        <span>Contraseña actual</span>
+        <input type="password" formControlName="contrasenaActual" autocomplete="current-password" />
+      </label>
+      <label>
+        <span>Nueva contraseña</span>
+        <input type="password" formControlName="nuevaContrasena" autocomplete="new-password" />
+      </label>
+      <label>
+        <span>Confirmar nueva contraseña</span>
+        <input type="password" formControlName="confirmacion" autocomplete="new-password" />
+        @if (contrasenasNoCoinciden()) {
+          <small class="field-error">Las contraseñas no coinciden.</small>
+        }
+      </label>
+
+      <button type="submit" [disabled]="store.guardando()">
+        {{ store.guardando() ? 'Guardando...' : 'Actualizar contraseña' }}
+      </button>
+    </form>
+  </div>
+</section>

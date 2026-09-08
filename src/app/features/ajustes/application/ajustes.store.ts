@@ -2,38 +2,41 @@ import { Injectable, inject, signal } from '@angular/core';
 
 import { AjustesService } from '../../../shared/services/ajustes.service';
 import { AjustesNegocio } from '../domain/ajustes.model';
+import { ResultadoReinicioDatosOperativos } from '../domain/ajustes.repository';
 
 @Injectable()
 export class AjustesStore {
   private readonly ajustesService = inject(AjustesService);
-
-  /** Alias reactivo al servicio compartido */
-  readonly ajustes = this.ajustesService.ajustes;
-
-  /** Señal de UI para el feedback de guardado — no pertenece al dominio */
-  readonly guardadoRecientemente = signal(false);
-
   private temporizadorGuardado: ReturnType<typeof setTimeout> | null = null;
 
-  actualizarInformacion(cambios: Partial<AjustesNegocio['informacion']>): void {
-    this.ajustesService.actualizarInformacion(cambios);
+  readonly ajustes = this.ajustesService.ajustes;
+  readonly cargando = this.ajustesService.cargando;
+  readonly guardando = this.ajustesService.guardando;
+  readonly error = this.ajustesService.error;
+  readonly guardadoRecientemente = signal(false);
+  readonly reinicioDatosReciente = signal<ResultadoReinicioDatosOperativos | null>(null);
+
+  constructor() {
+    void this.cargar();
   }
 
-  actualizarOperativas(cambios: Partial<AjustesNegocio['operativas']>): void {
-    this.ajustesService.actualizarOperativas(cambios);
+  cargar(): Promise<boolean> {
+    return this.ajustesService.cargar();
   }
 
-  actualizarNotificaciones(cambios: Partial<AjustesNegocio['notificaciones']>): void {
-    this.ajustesService.actualizarNotificaciones(cambios);
-  }
-
-  guardarCambios(): void {
+  async guardarCambios(borrador: AjustesNegocio): Promise<boolean> {
+    const guardado = await this.ajustesService.guardar(borrador);
+    if (!guardado) return false;
     this.guardadoRecientemente.set(true);
-
-    if (this.temporizadorGuardado) {
-      clearTimeout(this.temporizadorGuardado);
-    }
-
+    if (this.temporizadorGuardado) clearTimeout(this.temporizadorGuardado);
     this.temporizadorGuardado = setTimeout(() => this.guardadoRecientemente.set(false), 2600);
+    return true;
+  }
+
+  async reiniciarDatosOperativos(confirmacion: string): Promise<boolean> {
+    const resultado = await this.ajustesService.reiniciarDatosOperativos(confirmacion);
+    if (resultado === null) return false;
+    this.reinicioDatosReciente.set(resultado);
+    return true;
   }
 }

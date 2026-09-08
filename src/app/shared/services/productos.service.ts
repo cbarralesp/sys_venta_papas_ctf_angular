@@ -1,91 +1,110 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, firstValueFrom, forkJoin } from 'rxjs';
+import { Categoria } from '../../features/productos/domain/categoria.model';
+import { ProductosRepository } from '../../features/productos/domain/productos.repository';
+import { CategoriaProducto, Producto, ProductoCommand } from '../../features/productos/domain/producto.model';
+import { apiErrorMessage } from './api-error-message';
 
-import { CATEGORIAS_PRODUCTO, CategoriaProducto, Producto, ProductoCommand } from '../../features/productos/domain/producto.model';
-
-/**
- * Servicio raíz singleton para el catálogo de productos.
- * Permite que Caja vea en tiempo real los productos creados/editados
- * en el módulo Productos y viceversa.
- */
 @Injectable({ providedIn: 'root' })
 export class ProductosService {
-  readonly categorias = signal<CategoriaProducto[]>([...CATEGORIAS_PRODUCTO]);
+  private readonly repository = inject(ProductosRepository);
+  private readonly catalogoCategorias = signal<Categoria[]>([]);
+  readonly categorias = computed(() => this.catalogoCategorias().map((c) => c.nombre));
+  readonly productos = signal<Producto[]>([]);
+  readonly cargando = signal(false);
+  readonly guardando = signal(false);
+  readonly error = signal<string | null>(null);
 
-  readonly productos = signal<Producto[]>([
-    { id: 1, nombre: 'Papas fritas chicas',   categoria: 'Papas fritas', precioVenta: 2000, costo: 900,  disponible: true, icono: '🍟' },
-    { id: 2, nombre: 'Papas fritas medianas',  categoria: 'Papas fritas', precioVenta: 3500, costo: 1500, disponible: true, icono: '🍟' },
-    { id: 3, nombre: 'Papas fritas grandes',   categoria: 'Papas fritas', precioVenta: 4000, costo: 1800, disponible: true, icono: '🍟' },
-    { id: 4, nombre: 'Handroll pollo',         categoria: 'Handroll',     precioVenta: 4000, costo: 1800, disponible: true, icono: '🍙' },
-    { id: 5, nombre: 'Handroll camarón',       categoria: 'Handroll',     precioVenta: 4500, costo: 2000, disponible: true, icono: '🍙' },
-    { id: 6, nombre: 'Bebida',                 categoria: 'Bebidas',      precioVenta: 1500, costo: 700,  disponible: true, icono: '🥤' },
-  ]);
-
-  // ── Categorías ─────────────────────────────────────────────────────────────
-
-  crearCategoria(nombre: CategoriaProducto): void {
-    this.categorias.update((lista) => [...lista, nombre]);
+  constructor() {
+    void this.recargar();
   }
 
-  editarCategoria(categoriaActual: CategoriaProducto, nuevoNombre: CategoriaProducto): void {
-    this.categorias.update((lista) =>
-      lista.map((c) => (c === categoriaActual ? nuevoNombre : c)),
-    );
-    this.productos.update((lista) =>
-      lista.map((p) =>
-        p.categoria === categoriaActual ? { ...p, categoria: nuevoNombre } : p,
-      ),
-    );
+  private async cargarCatalogo(): Promise<void> {
+    const catalogo = await firstValueFrom(forkJoin({
+      categorias: this.repository.listarCategorias(),
+      productos: this.repository.listarProductos(),
+    }));
+    this.catalogoCategorias.set(catalogo.categorias);
+    this.productos.set(catalogo.productos);
   }
 
-  eliminarCategoria(categoria: CategoriaProducto): void {
-    this.categorias.update((lista) => lista.filter((c) => c !== categoria));
+  async recargar(): Promise<void> {
+    if (this.cargando() || this.guardando()) return;
+    this.cargando.set(true);
+    this.error.set(null);
+    try {
+      await this.cargarCatalogo();
+    } catch (error) {
+      this.error.set(apiErrorMessage(
+        error,
+        'No se pudo cargar el catalogo. Verifica la conexion y reintenta.',
+      ));
+    } finally {
+      this.cargando.set(false);
+    }
   }
 
-  // ── Productos ──────────────────────────────────────────────────────────────
-
-  crearProducto(comando: ProductoCommand): void {
-    const nextId = Math.max(0, ...this.productos().map((p) => p.id)) + 1;
-    this.productos.update((lista) => [
-      ...lista,
-      {
-        id: nextId,
-        nombre: comando.nombre.trim(),
-        categoria: comando.categoria,
-        precioVenta: Number(comando.precioVenta),
-        costo: null,
-        disponible: comando.disponible,
-        icono: this.iconoPorCategoria(comando.categoria),
-      },
-    ]);
+  crearCategoria(nombre: CategoriaProducto): Promise<boolean> {
+    return this.ejecutar(() => this.repository.crearCategoria(nombre), () => this.cargarCatalogo());
   }
 
-  editarProducto(id: number, cambios: ProductoCommand): void {
-    this.productos.update((lista) =>
-      lista.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              nombre: cambios.nombre.trim(),
-              categoria: cambios.categoria,
-              precioVenta: Number(cambios.precioVenta),
-              disponible: cambios.disponible,
-              icono: this.iconoPorCategoria(cambios.categoria),
-            }
-          : p,
-      ),
-    );
+  editarCategoria(actual: CategoriaProducto, nombre: CategoriaProducto): Promise<boolean> {
+    const categoria = this.catalogoCategorias().find((c) => c.nombre === actual);
+    if (!categoria) return this.categoriaNoEncontrada();
+    return this.ejecutar(() => this.repository.editarCategoria(categoria.id, nombre), () => this.cargarCatalogo());
   }
 
-  eliminarProducto(id: number): void {
-    this.productos.update((lista) => lista.filter((p) => p.id !== id));
+  eliminarCategoria(nombre: CategoriaProducto): Promise<boolean> {
+    const categoria = this.catalogoCategorias().find((c) => c.nombre === nombre);
+    if (!categoria) return this.categoriaNoEncontrada();
+    return this.ejecutar(() => this.repository.eliminarCategoria(categoria.id), () => {
+      this.catalogoCategorias.update((lista) => lista.filter((c) => c.id !== categoria.id));
+    });
   }
 
-  private iconoPorCategoria(categoria: CategoriaProducto): string {
-    const iconos: Record<string, string> = {
-      'Papas fritas': '🍟',
-      Handroll: '🍙',
-      Bebidas: '🥤',
-    };
-    return iconos[categoria] ?? '🍽️';
+  crearProducto(comando: ProductoCommand): Promise<boolean> {
+    return this.ejecutar(() => this.repository.crearProducto(comando), (producto) => {
+      this.productos.update((lista) => [...lista, producto]);
+    });
+  }
+
+  editarProducto(id: number, comando: ProductoCommand): Promise<boolean> {
+    const cambios = { ...comando, costo: comando.costo === undefined
+      ? this.productos().find((p) => p.id === id)?.costo ?? null
+      : comando.costo };
+    return this.ejecutar(() => this.repository.editarProducto(id, cambios), (producto) => {
+      this.productos.update((lista) => lista.map((p) => p.id === id ? producto : p));
+    });
+  }
+
+  eliminarProducto(id: number): Promise<boolean> {
+    return this.ejecutar(() => this.repository.eliminarProducto(id), () => {
+      this.productos.update((lista) => lista.filter((p) => p.id !== id));
+    });
+  }
+
+  private categoriaNoEncontrada(): Promise<boolean> {
+    this.error.set('Categoria no encontrada. Recarga el catalogo.');
+    return Promise.resolve(false);
+  }
+
+  private async ejecutar<T>(operacion: () => Observable<T>, aplicar: (valor: T) => void | Promise<void>): Promise<boolean> {
+    if (this.guardando() || this.cargando()) return false;
+    this.guardando.set(true);
+    this.error.set(null);
+    let confirmado = false;
+    try {
+      const resultado = await firstValueFrom(operacion());
+      confirmado = true;
+      await aplicar(resultado);
+      return true;
+    } catch (error) {
+      this.error.set(confirmado
+        ? 'Cambio guardado, pero no se pudo actualizar la lista. Recarga el catalogo antes de continuar.'
+        : apiErrorMessage(error, 'No se pudo guardar el cambio. Verifica los datos y la conexion.'));
+      return confirmado;
+    } finally {
+      this.guardando.set(false);
+    }
   }
 }

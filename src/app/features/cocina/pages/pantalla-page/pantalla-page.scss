@@ -52,6 +52,7 @@
   margin: 0 0 clamp(28px, 3.5vh, 44px);
   span { font-size: clamp(40px, 5vh, 60px); filter: drop-shadow(0 5px 4px rgb(35 25 13 / 14%)); }
   h1 { margin: 0; color: var(--ink); font-size: clamp(32px, 4.2vh, 48px); font-weight: 750; letter-spacing: -.03em; }
+  p { margin: 5px 0 0; color: var(--muted); font-size: clamp(14px, 1.7vh, 20px); font-weight: 600; }
 }
 
 .screen-row {

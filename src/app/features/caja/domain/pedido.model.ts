@@ -1,4 +1,5 @@
 export type FormaPago = 'Efectivo' | 'Transferencia';
+export type TipoEntregaCaja = 'Para llevar' | 'En local';
 
 export interface ItemPedido {
   productoId: number;

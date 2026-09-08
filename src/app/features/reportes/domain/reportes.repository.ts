@@ -1,6 +1,7 @@
-import { ProductoVendido, VentaDiaria } from './reportes.model';
+import { Observable } from 'rxjs';
+
+import { ReporteVentas } from './reportes.model';
 
 export abstract class ReportesRepository {
-  abstract obtenerVentasDiarias(): VentaDiaria[];
-  abstract obtenerProductosVendidos(): ProductoVendido[];
+  abstract consultarVentas(desde: Date, hasta: Date): Observable<ReporteVentas>;
 }

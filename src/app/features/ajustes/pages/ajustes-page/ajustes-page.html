@@ -13,7 +13,16 @@
     }
   </header>
 
-  <div class="settings-layout">
+  @if (error()) {
+    <div class="settings-status settings-status--error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="recargar()">Recargar</button>
+    </div>
+  } @else if (cargando()) {
+    <div class="settings-status" role="status">Cargando ajustes guardados...</div>
+  }
+
+  <div class="settings-layout" [class.settings-layout--disabled]="cargando() || guardando()">
     <section class="settings-card">
       <header class="card-heading">
         <span class="card-heading__icon" aria-hidden="true">🏪</span>
@@ -36,7 +45,7 @@
 
         <label class="form-field form-field--icon">
           <span>Ícono</span>
-          <input type="text" formControlName="icono" maxlength="2" autocomplete="off" />
+          <input type="text" formControlName="icono" maxlength="20" autocomplete="off" />
         </label>
       </form>
     </section>
@@ -46,7 +55,7 @@
         <span class="card-heading__icon" aria-hidden="true">⚙️</span>
         <div>
           <h2>Preferencias operativas</h2>
-          <p>Configura moneda, impuestos y tiempos de preparación.</p>
+          <p>Configura moneda y tiempos de preparación. Los precios son finales.</p>
         </div>
       </header>
 
@@ -60,11 +69,6 @@
               <option value="EUR">Euro (EUR)</option>
             </select>
           </span>
-        </label>
-
-        <label class="form-field">
-          <span>Impuesto (%)</span>
-          <input type="number" formControlName="impuestoPorcentaje" min="0" max="100" inputmode="numeric" />
         </label>
 
         <label class="form-field">
@@ -102,9 +106,198 @@
         }
       </form>
     </section>
+
+    <section class="settings-card users-card">
+      <header class="card-heading">
+        <span class="card-heading__icon" aria-hidden="true">👥</span>
+        <div>
+          <h2>Usuarios y accesos</h2>
+          <p>Crea operadores y controla su rol y estado de acceso.</p>
+        </div>
+      </header>
+
+      @if (usuariosStore.error()) {
+        <div class="settings-status settings-status--error" role="alert">
+          <span>{{ usuariosStore.error() }}</span>
+          <button type="button" (click)="usuariosStore.cargar()">Reintentar</button>
+        </div>
+      }
+
+      <form class="user-create" [formGroup]="usuarioForm" (ngSubmit)="crearUsuario()">
+        <label class="form-field">
+          <span>Usuario</span>
+          <input type="text" formControlName="nombreUsuario" autocomplete="off" placeholder="ej: caja2" />
+        </label>
+        <label class="form-field">
+          <span>Nombre visible</span>
+          <input type="text" formControlName="nombreVisible" autocomplete="off" placeholder="Ej: Caja tarde" />
+        </label>
+        <label class="form-field">
+          <span>Contraseña inicial</span>
+          <input type="password" formControlName="contrasena" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
+        </label>
+        <label class="form-field">
+          <span>Rol</span>
+          <select formControlName="rol">
+            <option value="ADMIN">Administrador</option>
+            <option value="CAJA">Caja</option>
+            <option value="COCINA">Cocina</option>
+          </select>
+        </label>
+        <button class="secondary-button" type="submit" [disabled]="usuariosStore.guardando()">
+          {{ usuariosStore.guardando() ? 'Guardando...' : 'Crear usuario' }}
+        </button>
+      </form>
+
+      @if (usuariosStore.cargando()) {
+        <p class="users-empty">Cargando usuarios...</p>
+      } @else {
+        <div class="users-table-wrap">
+          <table class="users-table">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Acceso</th><th>Activo</th><th>Contraseña</th></tr></thead>
+            <tbody>
+              @for (usuario of usuariosStore.usuarios(); track usuario.id) {
+                <tr>
+                  <td data-label="Usuario">
+                    <input
+                      class="user-name-input"
+                      type="text"
+                      [value]="usuario.nombreVisible"
+                      [disabled]="usuariosStore.guardando()"
+                      [attr.aria-label]="'Nombre visible de ' + usuario.nombreUsuario"
+                      (blur)="actualizarNombreVisible(usuario, $event)"
+                      (keydown.enter)="actualizarNombreVisible(usuario, $event)"
+                    />
+                    <small>{{ usuario.nombreUsuario }}</small>
+                  </td>
+                  <td data-label="Rol">
+                    <select [value]="usuario.rol" [disabled]="usuariosStore.guardando()"
+                      (change)="actualizarRol(usuario, $event)" [attr.aria-label]="'Rol de ' + usuario.nombreVisible">
+                      <option value="ADMIN">Administrador</option>
+                      <option value="CAJA">Caja</option>
+                      <option value="COCINA">Cocina</option>
+                    </select>
+                  </td>
+                  <td data-label="Acceso">
+                    @if (estaBloqueado(usuario)) {
+                      <span class="access-badge access-badge--blocked" [title]="'Hasta ' + bloqueoHasta(usuario)">Bloqueado</span>
+                    } @else {
+                      <span class="access-badge">Disponible</span>
+                    }
+                  </td>
+                  <td data-label="Activo">
+                    <input class="switch-input" type="checkbox" [checked]="usuario.activo"
+                      [disabled]="usuariosStore.guardando()" (change)="actualizarEstado(usuario, $event)"
+                      [attr.aria-label]="'Acceso activo de ' + usuario.nombreVisible" />
+                  </td>
+                  <td data-label="Contraseña">
+                    <button class="text-button" type="button" (click)="seleccionarContrasena(usuario)">
+                      Restablecer
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (usuarioContrasena(); as usuario) {
+        <form class="password-panel" [formGroup]="contrasenaForm" (ngSubmit)="restablecerContrasena()">
+          <div><strong>Nueva contraseña para {{ usuario.nombreVisible }}</strong><small>Mínimo 8 caracteres. También desbloquea el acceso.</small></div>
+          <input type="password" formControlName="nuevaContrasena" autocomplete="new-password" />
+          <button class="secondary-button" type="submit" [disabled]="usuariosStore.guardando()">Confirmar</button>
+          <button class="text-button" type="button" (click)="usuarioContrasena.set(null)">Cancelar</button>
+        </form>
+      }
+    </section>
+
+    <section class="settings-card demo-reset-card">
+      <header class="card-heading">
+        <span class="card-heading__icon" aria-hidden="true">↺</span>
+        <div>
+          <h2>Modo presentación</h2>
+          <p>Reinicia pedidos, caja, turnos, gastos, finanzas y reportes para mostrar el sistema desde cero.</p>
+        </div>
+      </header>
+
+      <div class="demo-reset">
+        <div>
+          <strong>Esto conserva productos, categorías, usuarios y ajustes.</strong>
+          <p>
+            Borra solo la operación registrada y reinicia los contadores; el próximo pedido vuelve a ser #001.
+          </p>
+        </div>
+        <label class="form-field">
+          <span>Escribe REINICIAR para confirmar</span>
+          <input
+            type="text"
+            autocomplete="off"
+            [value]="confirmacionReinicioDatos()"
+            (input)="actualizarConfirmacionReinicioDatos($any($event.target).value)"
+          />
+        </label>
+        <button
+          class="danger-button"
+          type="button"
+          [disabled]="guardando() || confirmacionReinicioDatos().trim() !== 'REINICIAR'"
+          (click)="reiniciarDatosOperativos()"
+        >
+          {{ guardando() ? 'Reiniciando...' : 'Reiniciar operación' }}
+        </button>
+      </div>
+
+      @if (reinicioDatosReciente(); as resultado) {
+        <p class="demo-reset-result" role="status">
+          Datos reiniciados: {{ resultado.pedidosEliminados }} pedidos,
+          {{ resultado.gastosEliminados }} gastos y {{ resultado.turnosEliminados }} turnos.
+        </p>
+      }
+    </section>
+
+    <section class="settings-card activity-card">
+      <header class="card-heading activity-heading">
+        <span class="card-heading__icon" aria-hidden="true">◷</span>
+        <div>
+          <h2>Actividad administrativa</h2>
+          <p>Últimas acciones sensibles realizadas sobre usuarios y accesos.</p>
+        </div>
+        <button class="text-button" type="button" [disabled]="auditoriaStore.cargando()"
+          (click)="auditoriaStore.cargar()">Actualizar</button>
+      </header>
+
+      @if (auditoriaStore.error()) {
+        <div class="settings-status settings-status--error" role="alert">
+          <span>{{ auditoriaStore.error() }}</span>
+          <button type="button" (click)="auditoriaStore.cargar()">Reintentar</button>
+        </div>
+      } @else if (auditoriaStore.cargando()) {
+        <p class="users-empty" role="status">Cargando actividad...</p>
+      } @else if (auditoriaStore.eventos().length === 0) {
+        <p class="users-empty">Todavía no hay actividad administrativa registrada.</p>
+      } @else {
+        <ol class="activity-list">
+          @for (evento of auditoriaStore.eventos(); track evento.id) {
+            <li>
+              <span class="activity-marker" aria-hidden="true"></span>
+              <div class="activity-content">
+                <div class="activity-summary">
+                  <strong>{{ etiquetaAccion(evento.accion) }}</strong>
+                  <time [attr.datetime]="evento.fecha">{{ fechaAuditoria(evento.fecha) }}</time>
+                </div>
+                <p>{{ evento.detalle }}</p>
+                <small>Realizado por <b>{{ evento.actor }}</b></small>
+              </div>
+            </li>
+          }
+        </ol>
+      }
+    </section>
   </div>
 
   <div class="settings-actions">
-    <button class="primary-button" type="button" (click)="guardarCambios()">Guardar cambios</button>
+    <button class="primary-button" type="button" [disabled]="cargando() || guardando()" (click)="guardarCambios()">
+      {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+    </button>
   </div>
 </section>

@@ -4,6 +4,9 @@
 
 .range-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab-button { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 18px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: #4b5565; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; transition: 150ms ease; &:hover { border-color: var(--orange); color: var(--orange); } &--active { border-color: var(--orange); background: linear-gradient(135deg, #ff8a00, #ff6200); color: #fff; box-shadow: 0 6px 14px rgb(255 112 0 / 22%); } }
+.tab-button:disabled { cursor: wait; opacity: .7; }
+
+.report-status { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: -6px 0 18px; padding: 10px 14px; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #9a3412; font-size: 13px; font-weight: 600; button { padding: 6px 10px; border: 0; border-radius: 7px; background: #9a3412; color: #fff; font: inherit; font-size: 12px; cursor: pointer; } &--error { border-color: #fecaca; background: #fef2f2; color: #991b1b; button { background: #991b1b; } } }
 
 .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
 .kpi-card { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: 0 3px 12px rgb(26 32 44 / 4%); span { color: var(--muted); font-size: 11px; font-weight: 650; } strong { font-size: 20px; letter-spacing: -.02em; color: var(--ink); } small { color: var(--muted); font-size: 11px; } &--highlight { border-color: var(--orange); background: var(--orange-soft); strong { color: var(--orange); } } }

@@ -7,9 +7,21 @@ export interface VentaDiaria {
 }
 
 export interface ProductoVendido {
+  productoId: number;
   nombre: string;
   categoria: string;
   icono: string;
   cantidadVendida: number;
   totalGenerado: number;
+}
+
+export interface ReporteVentas {
+  desde: Date;
+  hasta: Date;
+  totalVentas: number;
+  totalPedidos: number;
+  promedioDiario: number;
+  ticketPromedio: number;
+  ventasDiarias: VentaDiaria[];
+  productosVendidos: ProductoVendido[];
 }

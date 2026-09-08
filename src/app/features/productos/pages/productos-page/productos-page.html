@@ -1,4 +1,10 @@
 <section class="products-page">
+  @if (productosStore.cargando()) {
+    <p role="status">Cargando catalogo...</p>
+  }
+  @if (productosStore.error(); as error) {
+    <p role="alert">{{ error }} <button type="button" (click)="productosStore.recargar()" [disabled]="productosStore.guardando() || productosStore.cargando()">Reintentar carga</button></p>
+  }
   <header class="page-heading">
     <div>
       <p class="eyebrow">Catálogo</p>
@@ -104,6 +110,8 @@
       </header>
 
       <form [formGroup]="productForm" (ngSubmit)="saveProduct()">
+        @if (productosStore.error(); as error) { <p role="alert">{{ error }}</p> }
+        <fieldset class="catalog-fields" [disabled]="productosStore.guardando() || productosStore.cargando()">
         <label class="form-field">
           <span>Nombre del producto</span>
           <input type="text" formControlName="nombre" placeholder="Ej: Papas fritas grandes" autocomplete="off" />
@@ -143,6 +151,7 @@
           <button class="secondary-button" type="button" (click)="closeModal()">Cancelar</button>
           <button class="primary-button" type="submit">{{ editingId() === null ? 'Crear producto' : 'Guardar cambios' }}</button>
         </div>
+        </fieldset>
       </form>
     </section>
   </div>
@@ -163,6 +172,8 @@
         </header>
 
         <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
+          @if (productosStore.error(); as error) { <p role="alert">{{ error }}</p> }
+          <fieldset class="catalog-fields" [disabled]="productosStore.guardando() || productosStore.cargando()">
           <label class="form-field">
             <span>Nombre de la categoría</span>
             <input type="text" formControlName="nombre" placeholder="Ej: Sándwiches" autocomplete="off" />
@@ -178,6 +189,7 @@
             <button class="secondary-button" type="button" (click)="closeCategoryModal()">Cancelar</button>
             <button class="primary-button" type="submit">{{ editingCategory() === null ? 'Crear categoría' : 'Guardar cambios' }}</button>
           </div>
+          </fieldset>
         </form>
       </section>
     } @else if (categoryPendingDelete() !== null) {

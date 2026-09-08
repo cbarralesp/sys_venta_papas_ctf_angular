@@ -5,6 +5,26 @@
       <p>Crea un nuevo pedido y envíalo a cocina</p>
     </div>
     <div class="stats">
+      <button class="history-button" type="button" (click)="mostrarHistorial()">
+        <span>Turnos</span><strong>Ver historial</strong>
+      </button>
+      @if (sesionCaja(); as sesion) {
+        <button class="cash-session cash-session--open" type="button" (click)="mostrarCierre()">
+          <span>Caja abierta</span><strong>{{ formatPrice(sesion.efectivoEsperado) }}</strong>
+        </button>
+        <button class="reset-shift-button" type="button" (click)="mostrarReinicio()">
+          <span>Turno #{{ sesion.id }}</span><strong>Reiniciar</strong>
+        </button>
+        @if (puedeEliminarTurnos()) {
+          <button class="delete-shift-button" type="button" (click)="eliminarTurno(sesion.id)">
+            <span>Turno #{{ sesion.id }}</span><strong>Eliminar</strong>
+          </button>
+        }
+      } @else {
+        <button class="cash-session" type="button" (click)="mostrarApertura()">
+          <span>Caja cerrada</span><strong>Abrir caja</strong>
+        </button>
+      }
       <div class="stat-card">
         <span>Pedidos hoy</span>
         <strong>{{ pedidosHoy() }}</strong>
@@ -12,9 +32,37 @@
       <div class="stat-card stat-card--sales">
         <span>Ventas hoy</span>
         <strong>{{ formatPrice(ventasHoy()) }}</strong>
+        <small>Ticket {{ formatPrice(ticketPromedioHoy()) }}</small>
       </div>
     </div>
   </header>
+
+  @if (errorCaja(); as mensaje) {
+    <p class="cash-session-error" role="alert">{{ mensaje }}</p>
+  }
+  @if (errorMetricas(); as mensaje) {
+    <p class="cash-session-error" role="alert">{{ mensaje }}</p>
+  }
+  @if (sesionCaja() === null) {
+    <button class="closed-banner" type="button" (click)="mostrarApertura()">
+      <strong>La caja está cerrada</strong><span>Ábrela para poder registrar pedidos.</span>
+    </button>
+  } @else if (!turnoEsDeHoy()) {
+    <button class="closed-banner closed-banner--warning" type="button" (click)="mostrarReinicio()">
+      <strong>Turno de otro día</strong
+      ><span>Reinicia la caja para comenzar las ventas de hoy.</span>
+    </button>
+  }
+
+  @if (carrito().length > 0) {
+    <button class="mobile-order-shortcut" type="button" (click)="verPedido()">
+      <span>Ver pedido</span>
+      <strong
+        >{{ totalItems() }} {{ totalItems() === 1 ? 'producto' : 'productos' }} ·
+        {{ formatPrice(subtotal()) }}</strong
+      >
+    </button>
+  }
 
   <div class="cash-layout">
     <section class="catalog-panel">
@@ -33,7 +81,12 @@
 
       <div class="product-grid">
         @for (producto of productosFiltrados(); track producto.id) {
-          <button class="product-card" type="button" (click)="agregarProducto(producto)">
+          <button
+            class="product-card"
+            type="button"
+            (click)="agregarProducto(producto)"
+            [disabled]="cantidadEnCarrito(producto) >= 99"
+          >
             <span class="product-card__add" aria-hidden="true">+</span>
             <span class="product-card__icon" aria-hidden="true">{{ producto.icono }}</span>
             <strong>{{ producto.nombre }}</strong>
@@ -59,14 +112,24 @@
       </div>
     </section>
 
-    <aside class="order-panel">
+    <aside #pedidoActual class="order-panel">
+      @if (error(); as mensaje) {
+        <p class="order-error" role="alert">{{ mensaje }}</p>
+      }
       <header class="order-heading">
         <div>
           <p>Pedido nuevo</p>
-          <h2>#{{ numeroPedidoActual() }}</h2>
+          <h2>Nuevo</h2>
         </div>
-        <button class="clear-button" type="button" (click)="limpiarPedido()" [disabled]="carrito().length === 0">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+        <button
+          class="clear-button"
+          type="button"
+          (click)="limpiarPedido()"
+          [disabled]="carrito().length === 0"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7" />
+          </svg>
           Limpiar pedido
         </button>
       </header>
@@ -77,14 +140,35 @@
             <span class="order-item__icon" aria-hidden="true">{{ item.icono }}</span>
             <div class="order-item__info">
               <strong>{{ item.nombre }}</strong>
-              <span class="order-item__price">{{ formatPrice(item.precioUnitario * item.cantidad) }}</span>
+              <span class="order-item__price">{{
+                formatPrice(item.precioUnitario * item.cantidad)
+              }}</span>
+              @if (item.cantidad >= 99) {
+                <small class="order-item__limit">Máximo 99</small>
+              }
             </div>
             <div class="order-item__controls">
-              <button type="button" aria-label="Restar" (click)="decrementar(item.productoId)">−</button>
+              <button type="button" aria-label="Restar" (click)="decrementar(item.productoId)">
+                −
+              </button>
               <b>{{ item.cantidad }}</b>
-              <button type="button" aria-label="Sumar" (click)="incrementar(item.productoId)">+</button>
-              <button class="order-item__delete" type="button" aria-label="Eliminar" (click)="eliminarItem(item.productoId)">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7"/></svg>
+              <button
+                type="button"
+                aria-label="Sumar"
+                (click)="incrementar(item.productoId)"
+                [disabled]="item.cantidad >= 99"
+              >
+                +
+              </button>
+              <button
+                class="order-item__delete"
+                type="button"
+                aria-label="Eliminar"
+                (click)="eliminarItem(item.productoId)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7" />
+                </svg>
               </button>
             </div>
           </div>
@@ -97,6 +181,9 @@
       </div>
 
       @if (carrito().length > 0) {
+        @if (avisoCarrito(); as mensaje) {
+          <p class="cart-notice" role="status">{{ mensaje }}</p>
+        }
         <div class="order-subtotal">
           <span>{{ totalItems() }} {{ totalItems() === 1 ? 'producto' : 'productos' }}</span>
           <div>
@@ -109,6 +196,7 @@
           <span>Nota del pedido (opcional)</span>
           <textarea
             rows="2"
+            maxlength="500"
             placeholder="Ej: Sin sal, extra ketchup, etc."
             [value]="nota()"
             (input)="actualizarNota($any($event.target).value)"
@@ -124,7 +212,10 @@
               type="button"
               (click)="seleccionarFormaPago('Efectivo')"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="2" y="6" width="20" height="12" rx="2" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
               Efectivo
             </button>
             <button
@@ -133,7 +224,9 @@
               type="button"
               (click)="seleccionarFormaPago('Transferencia')"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l4 4-4 4M21 7H7M7 21l-4-4 4-4M3 17h14"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 3l4 4-4 4M21 7H7M7 21l-4-4 4-4M3 17h14" />
+              </svg>
               Transferencia
             </button>
           </div>
@@ -144,10 +237,25 @@
           <strong>{{ formatPrice(subtotal()) }}</strong>
         </div>
 
-        <button class="submit-button" type="button" (click)="crearPedido()">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+        <button
+          class="submit-button"
+          type="button"
+          (click)="crearPedido()"
+          [disabled]="guardando() || sesionCaja() === null || !turnoEsDeHoy()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M22 2 11 13M22 2l-7 20-4-9-9-4z" />
+          </svg>
           <span>
-            Crear pedido y enviar a cocina
+            {{
+              sesionCaja() === null
+                ? 'Abre la caja para crear pedidos'
+                : !turnoEsDeHoy()
+                  ? 'Reinicia el turno para vender hoy'
+                : guardando()
+                  ? 'Creando pedido...'
+                  : 'Crear pedido y enviar a cocina'
+            }}
             <small>El pedido se enviará a cocina</small>
           </span>
         </button>
@@ -155,3 +263,251 @@
     </aside>
   </div>
 </section>
+
+@if (modalCaja(); as modo) {
+  <div class="cash-modal-layer">
+    <button
+      class="cash-modal-backdrop"
+      type="button"
+      aria-label="Cerrar"
+      (click)="cerrarModalCaja()"
+    ></button>
+    <section
+      class="cash-modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="
+        modo === 'abrir' ? 'Abrir caja' : modo === 'cerrar' ? 'Cerrar caja' : 'Reiniciar turno'
+      "
+    >
+      <header>
+        <div>
+          <span>Control de turno</span>
+          <h2>
+            {{
+              modo === 'abrir' ? 'Abrir caja' : modo === 'cerrar' ? 'Cerrar caja' : 'Reiniciar turno'
+            }}
+          </h2>
+        </div>
+        <button type="button" aria-label="Cerrar" (click)="cerrarModalCaja()">×</button>
+      </header>
+      @if (modo === 'abrir') {
+        <p>Indica el efectivo disponible al comenzar el turno.</p>
+        <label
+          ><span>Saldo inicial</span
+          ><input
+            type="number"
+            min="0"
+            [ngModel]="saldoInicial()"
+            (ngModelChange)="actualizarSaldoInicial($event)"
+        /></label>
+      } @else if (sesionCaja(); as sesion) {
+        @if (modo === 'reiniciar') {
+          <p>
+            Este flujo cerrará el turno actual, guardará su conciliación y abrirá un turno nuevo
+            limpio. No elimina ventas ni historial.
+          </p>
+        }
+        <div class="cash-summary">
+          <span
+            >Saldo inicial <strong>{{ formatPrice(sesion.saldoInicial) }}</strong></span
+          >
+          <span
+            >Ventas en efectivo <strong>{{ formatPrice(sesion.ventasEfectivo) }}</strong></span
+          >
+          <span
+            >Transferencias <strong>{{ formatPrice(sesion.ventasTransferencia) }}</strong></span
+          >
+          <span
+            >Gastos en efectivo <strong>−{{ formatPrice(sesion.gastosEfectivo) }}</strong></span
+          >
+          <span class="cash-summary__total"
+            >Efectivo esperado <strong>{{ formatPrice(sesion.efectivoEsperado) }}</strong></span
+          >
+        </div>
+        <label
+          ><span>Efectivo contado</span
+          ><input
+            type="number"
+            min="0"
+            [ngModel]="efectivoDeclarado()"
+            (ngModelChange)="actualizarEfectivoDeclarado($event)"
+        /></label>
+        <p class="cash-difference">
+          Diferencia:
+          <strong>{{ formatPrice(efectivoDeclarado() - sesion.efectivoEsperado) }}</strong>
+        </p>
+        @if (modo === 'reiniciar') {
+          <label
+            ><span>Saldo inicial del nuevo turno</span
+            ><input
+              type="number"
+              min="0"
+              [ngModel]="saldoInicialNuevo()"
+              (ngModelChange)="actualizarSaldoInicialNuevo($event)"
+          /></label>
+          <label
+            ><span>Confirma con tu contraseña</span
+            ><input
+              type="password"
+              autocomplete="current-password"
+              [ngModel]="contrasenaReinicio()"
+              (ngModelChange)="actualizarContrasenaReinicio($event)"
+          /></label>
+        }
+      }
+      @if (errorCaja(); as mensaje) {
+        <p class="cash-session-error" role="alert">{{ mensaje }}</p>
+      }
+      <footer>
+        <button class="modal-cancel" type="button" (click)="cerrarModalCaja()">Cancelar</button
+        ><button
+          class="modal-confirm"
+          type="button"
+          [disabled]="
+            operandoCaja() ||
+            (modo === 'abrir'
+              ? saldoInicial() < 0
+              : efectivoDeclarado() < 0 ||
+                (modo === 'reiniciar' &&
+                  (saldoInicialNuevo() < 0 || contrasenaReinicio().trim().length === 0)))
+          "
+          (click)="
+            modo === 'abrir'
+              ? confirmarApertura()
+              : modo === 'cerrar'
+                ? confirmarCierre()
+                : confirmarReinicio()
+          "
+        >
+          {{
+            operandoCaja()
+              ? 'Procesando...'
+              : modo === 'abrir'
+                ? 'Abrir caja'
+                : modo === 'cerrar'
+                  ? 'Cerrar y guardar'
+                  : 'Reiniciar turno'
+          }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (historialVisible()) {
+  <div class="history-modal-layer">
+    <button
+      class="cash-modal-backdrop"
+      type="button"
+      aria-label="Cerrar historial"
+      (click)="cerrarHistorial()"
+    ></button>
+    <section class="history-modal" role="dialog" aria-modal="true" aria-label="Historial de caja">
+      <header>
+        <div>
+          <span>Control de turnos</span>
+          <h2>{{ sesionHistorial() ? 'Detalle del cierre' : 'Cajas cerradas' }}</h2>
+        </div>
+        <button type="button" aria-label="Cerrar" (click)="cerrarHistorial()">×</button>
+      </header>
+
+      @if (errorHistorial(); as mensaje) {
+        <p class="cash-session-error" role="alert">{{ mensaje }}</p>
+        <button class="history-retry" type="button" (click)="mostrarHistorial()">Reintentar</button>
+      }
+
+      @if (sesionHistorial(); as sesion) {
+        <button class="history-back" type="button" (click)="volverAlHistorial()">
+          ← Volver a los turnos
+        </button>
+        <div class="history-detail">
+          <div class="history-detail__identity">
+            <strong>Turno #{{ sesion.id }}</strong>
+            <span>{{ formatDate(sesion.abiertaEn) }} a {{ formatDate(sesion.cerradaEn) }}</span>
+            <small>Abierto por {{ sesion.abiertaPor }} · Cerrado por {{ sesion.cerradaPor }}</small>
+          </div>
+          @if (puedeEliminarTurnos()) {
+            <button
+              class="history-delete"
+              type="button"
+              (click)="eliminarTurno(sesion.id)"
+              [disabled]="cargandoHistorial()"
+            >
+              Eliminar turno
+            </button>
+          }
+          <div class="cash-summary">
+            <span
+              >Saldo inicial <strong>{{ formatPrice(sesion.saldoInicial) }}</strong></span
+            >
+            <span
+              >Ventas en efectivo <strong>{{ formatPrice(sesion.ventasEfectivo) }}</strong></span
+            >
+            <span
+              >Transferencias <strong>{{ formatPrice(sesion.ventasTransferencia) }}</strong></span
+            >
+            <span
+              >Gastos en efectivo <strong>−{{ formatPrice(sesion.gastosEfectivo) }}</strong></span
+            >
+            <span
+              >Efectivo esperado <strong>{{ formatPrice(sesion.efectivoEsperado) }}</strong></span
+            >
+            <span
+              >Efectivo declarado
+              <strong>{{ formatPrice(sesion.efectivoDeclarado ?? 0) }}</strong></span
+            >
+            <span class="cash-summary__total"
+              >Diferencia
+              <strong [class.difference-negative]="(sesion.diferencia ?? 0) < 0">{{
+                formatPrice(sesion.diferencia ?? 0)
+              }}</strong></span
+            >
+          </div>
+          <section class="shift-sales">
+            <header>
+              <div>
+                <span>Ventas del turno</span>
+                <strong>{{ ventasSesionHistorial().length }} pedidos</strong>
+              </div>
+              <b>{{ formatPrice(sesion.ventasEfectivo + sesion.ventasTransferencia) }}</b>
+            </header>
+            <div class="shift-sales__list">
+              @for (pedido of ventasSesionHistorial(); track pedido.id) {
+                <article class="shift-sale">
+                  <div>
+                    <strong>Pedido #{{ pedido.numero }}</strong>
+                    <small>{{ formatDate(pedido.creadoEn) }} · {{ pedido.formaPago }}</small>
+                    <small>{{ pedido.items.length }} item(s) · {{ pedido.estado }}</small>
+                  </div>
+                  <span>{{ formatPrice(pedido.total) }}</span>
+                </article>
+              } @empty {
+                <p>No hay ventas asociadas a este turno.</p>
+              }
+            </div>
+          </section>
+        </div>
+      } @else if (cargandoHistorial()) {
+        <p class="history-status" role="status">Cargando turnos...</p>
+      } @else {
+        <div class="history-list">
+          @for (sesion of historialCaja(); track sesion.id) {
+            <button type="button" (click)="verSesionCerrada(sesion.id)">
+              <span
+                ><strong>Turno #{{ sesion.id }}</strong
+                ><small>{{ formatDate(sesion.cerradaEn) }} · {{ sesion.cerradaPor }}</small></span
+              >
+              <span class="history-list__amount"
+                ><strong>{{ formatPrice(sesion.efectivoDeclarado ?? 0) }}</strong
+                ><small>Diferencia {{ formatPrice(sesion.diferencia ?? 0) }}</small></span
+              >
+            </button>
+          } @empty {
+            <p class="history-status">Todavía no hay cajas cerradas.</p>
+          }
+        </div>
+      }
+    </section>
+  </div>
+}

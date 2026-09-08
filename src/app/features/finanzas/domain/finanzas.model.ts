@@ -5,7 +5,7 @@ export type TipoMovimiento = 'Venta' | 'Gasto';
 export type FiltroPeriodo = 'Hoy' | 'Semana' | 'Mes';
 
 export interface MovimientoFinanciero {
-  id: number;
+  id: string;
   fecha: Date;
   descripcion: string;
   categoria: string;
@@ -13,6 +13,29 @@ export interface MovimientoFinanciero {
   formaPago: FormaPagoFinanzas;
   monto: number;
   costo: number;
+}
+
+export interface ResumenFinanciero {
+  desde: Date;
+  hasta: Date;
+  totalIngresos: number;
+  totalCostos: number;
+  totalGastos: number;
+  gananciaBruta: number;
+  gananciaNeta: number;
+  ticketPromedio: number;
+  cantidadVentas: number;
+  movimientos: MovimientoFinanciero[];
+  ventasPorCategoria: ResumenPorCategoria[];
+  ventasPorFormaPago: ResumenPorFormaPago[];
+}
+
+export interface CrearGastoCommand {
+  descripcion: string;
+  categoria: string;
+  formaPago: FormaPagoFinanzas;
+  monto: number;
+  fecha: Date;
 }
 
 export interface ResumenPorCategoria {

@@ -36,6 +36,21 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## Runtime API configuration
+
+Local development uses `http://localhost:8090/api` from `public/config.js`. The production container replaces that value at startup, so the same Angular build can be promoted between environments without recompilation:
+
+```bash
+docker build -t venta-papas-ctf-frontend .
+docker run --rm -p 8081:8080 -e API_BASE_URL=https://api.example.com/api venta-papas-ctf-frontend
+```
+
+The container serves the SPA on port `8080` and exposes `GET /health` for platform health checks.
+
+## Alcance conectado
+
+El frontend consume la API Java mediante puertos y adapters HTTP para catalogo, pedidos, cocina, caja, finanzas, reportes, ajustes, metricas y usuarios. La ruta `Mi cuenta` permite que cualquier rol autenticado cambie su propia contrasena; la administracion de usuarios permanece restringida a `ADMIN` dentro de Ajustes. Pedidos permite reimprimir un comprobante de 80 mm con los valores finales persistidos por el backend. Caja permite revisar los ultimos turnos cerrados y su conciliacion historica sin recalcular valores en el navegador.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:

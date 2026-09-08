@@ -1,81 +1,93 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { PedidosService } from '../../../shared/services/pedidos.service';
+import { AjustesService } from '../../../shared/services/ajustes.service';
+import { MetricasDiariasService } from '../../../shared/services/metricas-diarias.service';
 import { EstadoCocina, ItemPedidoCocina, PedidoCocina } from '../domain/pedido-cocina.model';
-
-interface KitchenTiming {
-  horaInicioPreparacion: Date | null;
-  horaListo: Date | null;
-}
+import { NotificadorCocina } from '../domain/notificador-cocina';
 
 @Injectable()
 export class CocinaStore {
   private readonly pedidosService = inject(PedidosService);
+  private readonly ajustesService = inject(AjustesService);
+  private readonly notificador = inject(NotificadorCocina);
+  private readonly metricasService = inject(MetricasDiariasService);
 
   readonly ahora = signal(new Date());
-
-  /**
-   * Mapa local con los tiempos de preparación de cada pedido.
-   * Se pre-popula con datos razonables para pedidos semilla que ya están
-   * en estado "En preparación" o "Listo".
-   */
-  private readonly tiemposCocina = signal<Map<number, KitchenTiming>>(
-    this.buildInitialTimings(),
+  readonly guardando = this.pedidosService.guardando;
+  readonly error = this.pedidosService.error;
+  readonly errorMetricas = this.metricasService.error;
+  readonly tiempoEstimadoPreparacionMin = computed(
+    () => this.ajustesService.ajustes().operativas.tiempoEstimadoPreparacionMin,
   );
 
-  /** Pedidos activos en cocina (Pendiente, En preparación o Listo) */
-  readonly pedidos = computed<PedidoCocina[]>(() => {
-    const tiempos = this.tiemposCocina();
-    return this.pedidosService
+  constructor() {
+    void this.metricasService.cargar();
+  }
+
+  readonly pedidos = computed<PedidoCocina[]>(() =>
+    this.pedidosService
       .pedidos()
       .filter((p) => p.estado === 'Pendiente' || p.estado === 'En preparación' || p.estado === 'Listo')
-      .map((p) => {
-        const timing = tiempos.get(p.id);
-        return {
-          id: p.id,
-          numero: p.numero,
-          items: p.items.map(
-            (i): ItemPedidoCocina => ({
-              nombre: i.nombre,
-              cantidad: i.cantidad,
-              icono: i.icono ?? '🍽️',
-            }),
-          ),
-          solicitadoPor: 'Caja',
-          estado: p.estado as EstadoCocina,
-          horaSolicitud: p.creadoEn,
-          horaInicioPreparacion: timing?.horaInicioPreparacion ?? null,
-          horaListo: timing?.horaListo ?? null,
-        };
-      });
-  });
+      .map((p) => ({
+        id: p.id,
+        numero: p.numero,
+        items: p.items.map(
+          (i): ItemPedidoCocina => ({
+            nombre: i.nombre,
+            cantidad: i.cantidad,
+            icono: i.icono ?? '🍽️',
+          }),
+        ),
+        solicitadoPor: 'Caja',
+        estado: p.estado as EstadoCocina,
+        horaSolicitud: p.creadoEn,
+        horaInicioPreparacion: p.iniciadoPreparacionEn ?? null,
+        horaListo: p.listoEn ?? null,
+      })),
+  );
 
   readonly pendientes = computed(() => this.pedidos().filter((p) => p.estado === 'Pendiente'));
   readonly enPreparacion = computed(() => this.pedidos().filter((p) => p.estado === 'En preparación'));
   readonly listos = computed(() => this.pedidos().filter((p) => p.estado === 'Listo'));
-
   readonly pedidosActivos = computed(
     () => this.pendientes().length + this.enPreparacion().length + this.listos().length,
   );
 
-  /** Pedidos marcados como Entregado hoy */
-  readonly completadosHoy = computed(() => {
-    const hoy = new Date();
-    return this.pedidosService
-      .pedidos()
-      .filter((p) => {
-        const d = p.creadoEn;
-        return (
-          p.estado === 'Entregado' &&
-          d.getFullYear() === hoy.getFullYear() &&
-          d.getMonth() === hoy.getMonth() &&
-          d.getDate() === hoy.getDate()
-        );
-      }).length;
-  });
+  readonly completadosHoy = computed(() => this.metricasService.metricas().entregados);
+  readonly fechaMetricas = computed(() => this.metricasService.metricas().fecha);
+  readonly tiempoPromedioPreparacionMin = computed(
+    () => this.metricasService.metricas().tiempoPromedioPreparacionMin,
+  );
 
   actualizarReloj(): void {
     this.ahora.set(new Date());
+  }
+
+  async sincronizar(): Promise<boolean> {
+    const pendientesAntes = new Set(this.pendientes().map((pedido) => pedido.id));
+    const sincronizado = await this.pedidosService.cargar();
+    if (!sincronizado) return false;
+    void this.metricasService.cargar();
+    const hayNuevoPedido = this.pendientes().some((pedido) => !pendientesAntes.has(pedido.id));
+    if (hayNuevoPedido && this.ajustesService.ajustes().notificaciones.sonidoNuevoPedido) {
+      this.notificador.notificarNuevoPedido();
+    }
+    return true;
+  }
+
+  esDemorado(pedido: PedidoCocina): boolean {
+    const preferencias = this.ajustesService.ajustes().notificaciones;
+    if (!preferencias.alertaPedidoDemorado) return false;
+    const inicio = pedido.horaInicioPreparacion ?? pedido.horaSolicitud;
+    return this.ahora().getTime() - inicio.getTime() >= preferencias.minutosParaAlertaDemora * 60_000;
+  }
+
+  porcentajeTiempoEstimado(pedido: PedidoCocina): number {
+    if (!pedido.horaInicioPreparacion) return 0;
+    const transcurrido = this.ahora().getTime() - pedido.horaInicioPreparacion.getTime();
+    const estimado = this.tiempoEstimadoPreparacionMin() * 60_000;
+    return Math.min(100, Math.max(0, Math.round((transcurrido / estimado) * 100)));
   }
 
   tiempoTranscurrido(pedido: PedidoCocina): string {
@@ -91,56 +103,21 @@ export class CocinaStore {
     return fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
   }
 
-  comenzarPreparacion(id: number): void {
-    this.pedidosService.actualizarEstado(id, 'En preparación');
-    this.tiemposCocina.update((map) => {
-      const nuevo = new Map(map);
-      nuevo.set(id, { horaInicioPreparacion: new Date(), horaListo: null });
-      return nuevo;
-    });
+  async comenzarPreparacion(id: number): Promise<boolean> {
+    return this.actualizarEstado(id, 'En preparación');
   }
 
-  marcarComoListo(id: number): void {
-    this.pedidosService.actualizarEstado(id, 'Listo');
-    this.tiemposCocina.update((map) => {
-      const nuevo = new Map(map);
-      const existente = nuevo.get(id);
-      nuevo.set(id, {
-        horaInicioPreparacion: existente?.horaInicioPreparacion ?? new Date(),
-        horaListo: new Date(),
-      });
-      return nuevo;
-    });
+  async marcarComoListo(id: number): Promise<boolean> {
+    return this.actualizarEstado(id, 'Listo');
   }
 
-  entregarPedido(id: number): void {
-    this.pedidosService.actualizarEstado(id, 'Entregado');
-    this.tiemposCocina.update((map) => {
-      const nuevo = new Map(map);
-      nuevo.delete(id);
-      return nuevo;
-    });
+  async entregarPedido(id: number): Promise<boolean> {
+    return this.actualizarEstado(id, 'Entregado');
   }
 
-  /**
-   * Pre-popula el mapa de tiempos para los pedidos semilla que ya tienen
-   * un estado intermedio (En preparación / Listo).
-   */
-  private buildInitialTimings(): Map<number, KitchenTiming> {
-    const map = new Map<number, KitchenTiming>();
-    for (const pedido of this.pedidosService.pedidos()) {
-      if (pedido.estado === 'En preparación') {
-        map.set(pedido.id, {
-          horaInicioPreparacion: pedido.creadoEn,
-          horaListo: null,
-        });
-      } else if (pedido.estado === 'Listo') {
-        map.set(pedido.id, {
-          horaInicioPreparacion: pedido.creadoEn,
-          horaListo: new Date(pedido.creadoEn.getTime() + 4 * 60_000),
-        });
-      }
-    }
-    return map;
+  private async actualizarEstado(id: number, estado: 'En preparación' | 'Listo' | 'Entregado'): Promise<boolean> {
+    const actualizado = await this.pedidosService.actualizarEstado(id, estado);
+    if (actualizado) void this.metricasService.cargar();
+    return actualizado;
   }
 }

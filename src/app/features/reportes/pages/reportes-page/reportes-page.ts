@@ -1,14 +1,12 @@
 import { Component, inject } from '@angular/core';
 
 import { ReportesStore } from '../../application/reportes.store';
-import { ReportesMemoryRepository } from '../../data-access/reportes-memory.repository';
 import { FiltroRangoReporte } from '../../domain/reportes.model';
-import { ReportesRepository } from '../../domain/reportes.repository';
 
 @Component({
   selector: 'app-reportes',
   imports: [],
-  providers: [ReportesStore, { provide: ReportesRepository, useClass: ReportesMemoryRepository }],
+  providers: [ReportesStore],
   templateUrl: './reportes-page.html',
   styleUrl: './reportes-page.scss',
 })
@@ -24,9 +22,15 @@ export class Reportes {
   readonly ticketPromedio = this.reportesStore.ticketPromedio;
   readonly mejorDia = this.reportesStore.mejorDia;
   readonly productosOrdenados = this.reportesStore.productosOrdenados;
+  readonly cargando = this.reportesStore.cargando;
+  readonly error = this.reportesStore.error;
 
   seleccionarRango(rango: FiltroRangoReporte): void {
-    this.reportesStore.seleccionarRango(rango);
+    void this.reportesStore.seleccionarRango(rango);
+  }
+
+  recargar(): void {
+    void this.reportesStore.cargar();
   }
 
   porcentajeDelMaximo(monto: number): number {

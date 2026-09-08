@@ -100,3 +100,4 @@ td { color: #4f5b6d; font-size: 12px; }
   .modal-actions { grid-template-columns: 1fr; .primary-button { grid-row: 1; } }
 }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(30px); } }
+.catalog-fields { display: grid; gap: 19px; border: 0; padding: 0; margin: 0; min-width: 0; }

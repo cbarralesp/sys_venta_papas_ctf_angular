@@ -1,17 +1,39 @@
 <section class="orders-page">
+  @if (pedidosStore.cargando()) {
+    <p role="status">Cargando pedidos...</p>
+  }
+  @if (pedidosStore.error(); as mensaje) {
+    <p role="alert">{{ mensaje }}</p>
+  }
+  @if (errorMetricas(); as mensaje) {
+    <p role="alert">{{ mensaje }}</p>
+  }
+  @if (errorImpresion(); as mensaje) {
+    <p role="alert">{{ mensaje }}</p>
+  }
   <header class="page-heading">
     <div>
       <p class="eyebrow">Gestión</p>
       <h1>Pedidos</h1>
-      <p>Consulta el historial y estado de todos los pedidos del día.</p>
+      <p>Consulta el estado y los últimos 200 pedidos registrados.</p>
     </div>
     <div class="heading-actions">
       <label class="search-field">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input type="search" placeholder="Buscar pedido..." (input)="buscar($any($event.target).value)" />
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <input
+          type="search"
+          placeholder="Buscar pedido..."
+          (input)="buscar($any($event.target).value)"
+        />
       </label>
       <div class="today-badge">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M8 3v4M16 3v4M3 10h18" />
+        </svg>
         {{ totalPedidosHoy() }} pedidos hoy
       </div>
     </div>
@@ -48,28 +70,73 @@
         <tbody>
           @for (pedido of pedidosFiltrados(); track pedido.id) {
             <tr [class.row--selected]="pedidoSeleccionado()?.id === pedido.id">
-              <td data-label="Pedido"><strong>#{{ pedido.numero }}</strong></td>
+              <td data-label="Pedido">
+                <strong>#{{ pedido.numero }}</strong>
+              </td>
               <td data-label="Hora">{{ formatearHora(pedido.creadoEn) }}</td>
               <td data-label="Items">{{ totalItems(pedido.items) }} productos</td>
               <td data-label="Pago">
-                <span class="payment-chip" [class.payment-chip--transfer]="pedido.formaPago === 'Transferencia'">
+                <span
+                  class="payment-chip"
+                  [class.payment-chip--transfer]="pedido.formaPago === 'Transferencia'"
+                >
                   {{ iconoFormaPago(pedido.formaPago) }} {{ pedido.formaPago }}
                 </span>
               </td>
-              <td data-label="Total"><strong class="price">{{ formatPrice(pedido.total) }}</strong></td>
+              <td data-label="Total">
+                <strong class="price">{{ formatPrice(pedido.total) }}</strong>
+              </td>
               <td data-label="Estado">
-                <span class="status-badge" [class]="'status-badge--' + pedido.estado.toLocaleLowerCase('es-CL').replaceAll(' ', '-')">
+                <span
+                  class="status-badge"
+                  [class]="
+                    'status-badge--' + pedido.estado.toLocaleLowerCase('es-CL').replaceAll(' ', '-')
+                  "
+                >
                   <i></i>{{ pedido.estado }}
                 </span>
               </td>
               <td data-label="Acciones">
                 <div class="row-actions">
-                  <button class="icon-button" type="button" aria-label="Ver detalle" title="Ver detalle" (click)="verDetalle(pedido.id)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <button
+                    class="icon-button"
+                    type="button"
+                    aria-label="Ver detalle"
+                    title="Ver detalle"
+                    (click)="verDetalle(pedido.id)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
                   </button>
-                  <button class="icon-button" type="button" aria-label="Reimprimir" title="Reimprimir">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+                  <button
+                    class="icon-button"
+                    type="button"
+                    aria-label="Reimprimir"
+                    title="Reimprimir"
+                    (click)="imprimir(pedido)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"
+                      />
+                    </svg>
                   </button>
+                  @if (puedeAnular(pedido)) {
+                    <button
+                      class="icon-button icon-button--danger"
+                      type="button"
+                      aria-label="Anular pedido"
+                      title="Anular pedido"
+                      (click)="solicitarAnulacion(pedido)"
+                      [disabled]="guardando()"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m3 0-1 14H7L6 7" />
+                      </svg>
+                    </button>
+                  }
                 </div>
               </td>
             </tr>
@@ -87,25 +154,39 @@
   </article>
 
   <div class="orders-hint">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    Los pedidos entregados permanecen visibles en esta sección para tu historial, incluso si ya no aparecen en Cocina.
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </svg>
+    Los pedidos entregados permanecen visibles en esta sección para tu historial, incluso si ya no
+    aparecen en Cocina.
   </div>
 </section>
 
 @if (pedidoSeleccionado(); as pedido) {
   <div class="modal-layer">
-    <button class="modal-backdrop" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()"></button>
+    <button
+      class="modal-backdrop"
+      type="button"
+      aria-label="Cerrar detalle"
+      (click)="cerrarDetalle()"
+    ></button>
     <section class="detail-panel" role="dialog" aria-modal="true" aria-label="Detalle del pedido">
       <header class="detail-heading">
         <div>
           <h2>Pedido #{{ pedido.numero }}</h2>
-          <p>Creado: hoy • {{ formatearHora(pedido.creadoEn) }}</p>
+          <p>Creado: {{ formatearFechaHora(pedido.creadoEn) }}</p>
         </div>
-        <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarDetalle()">×</button>
+        <button class="modal-close" type="button" aria-label="Cerrar" (click)="cerrarDetalle()">
+          ×
+        </button>
       </header>
 
       <div class="detail-body">
-        <span class="status-badge status-badge--lg" [class]="'status-badge--' + pedido.estado.toLocaleLowerCase('es-CL').replaceAll(' ', '-')">
+        <span
+          class="status-badge status-badge--lg"
+          [class]="'status-badge--' + pedido.estado.toLocaleLowerCase('es-CL').replaceAll(' ', '-')"
+        >
           <i></i>{{ pedido.estado }}
         </span>
 
@@ -124,9 +205,25 @@
           <p class="detail-notes">{{ pedido.notas }}</p>
         }
 
+        @if (pedido.estado === 'Cancelado') {
+          <div class="cancellation-audit">
+            <strong>Pedido anulado</strong>
+            <p>{{ pedido.motivoCancelacion }}</p>
+            <small
+              >Por {{ pedido.canceladoPor }}
+              @if (pedido.canceladoEn) {
+                · {{ formatearHora(pedido.canceladoEn) }}
+              }
+            </small>
+          </div>
+        }
+
         <div class="detail-field">
           <span>Pago</span>
-          <span class="payment-chip" [class.payment-chip--transfer]="pedido.formaPago === 'Transferencia'">
+          <span
+            class="payment-chip"
+            [class.payment-chip--transfer]="pedido.formaPago === 'Transferencia'"
+          >
             {{ iconoFormaPago(pedido.formaPago) }} {{ pedido.formaPago }}
           </span>
         </div>
@@ -141,7 +238,12 @@
 
         <div class="detail-field">
           <span>Estado actual</span>
-          <span class="status-badge" [class]="'status-badge--' + pedido.estado.toLocaleLowerCase('es-CL').replaceAll(' ', '-')">
+          <span
+            class="status-badge"
+            [class]="
+              'status-badge--' + pedido.estado.toLocaleLowerCase('es-CL').replaceAll(' ', '-')
+            "
+          >
             <i></i>{{ pedido.estado }}
           </span>
         </div>
@@ -152,16 +254,78 @@
       </div>
 
       <div class="detail-actions">
-        <button class="secondary-button" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+        <button class="secondary-button" type="button" (click)="imprimir(pedido)">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"
+            />
+          </svg>
           Reimprimir pedido
         </button>
-        @if (etiquetaSiguienteEstado(pedido.estado); as etiqueta) {
-          <button class="primary-button" type="button" (click)="avanzarEstado(pedido.id)">
+        @if (puedeGestionarEstado() && etiquetaSiguienteEstado(pedido.estado); as etiqueta) {
+          <button
+            class="primary-button"
+            type="button"
+            (click)="avanzarEstado(pedido.id)"
+            [disabled]="guardando()"
+          >
             {{ etiqueta }} <span aria-hidden="true">→</span>
           </button>
         }
+        @if (puedeAnular(pedido)) {
+          <button
+            class="danger-button"
+            type="button"
+            (click)="solicitarAnulacion(pedido)"
+            [disabled]="guardando()"
+          >
+            Anular pedido
+          </button>
+        }
       </div>
+    </section>
+  </div>
+}
+
+@if (pedidoPorAnular(); as pedido) {
+  <div class="cancel-modal-layer">
+    <button
+      class="cancel-backdrop"
+      type="button"
+      aria-label="Cerrar anulación"
+      (click)="cerrarAnulacion()"
+    ></button>
+    <section class="cancel-modal" role="alertdialog" aria-modal="true" aria-label="Anular pedido">
+      <header>
+        <div>
+          <p>Pedido #{{ pedido.numero }}</p>
+          <h2>Anular pedido</h2>
+        </div>
+        <button type="button" aria-label="Cerrar" (click)="cerrarAnulacion()">×</button>
+      </header>
+      <p>
+        Esta acción retirará el pedido de Cocina y no se incluirá en ventas ni en la conciliación de
+        caja. Si ya estaba entregado, solo un administrador puede anularlo.
+      </p>
+      <form [formGroup]="cancelacionForm" (ngSubmit)="confirmarAnulacion()">
+        <label
+          ><span>Motivo de anulación</span
+          ><textarea
+            rows="3"
+            formControlName="motivo"
+            placeholder="Ej: Cliente desistió de la compra"
+          ></textarea>
+        </label>
+        @if (cancelacionForm.controls.motivo.touched && cancelacionForm.controls.motivo.invalid) {
+          <small class="cancel-error">Ingresa un motivo de al menos 3 caracteres.</small>
+        }
+        <footer>
+          <button class="secondary-button" type="button" (click)="cerrarAnulacion()">Volver</button
+          ><button class="danger-button" type="submit" [disabled]="guardando()">
+            {{ guardando() ? 'Anulando...' : 'Confirmar anulación' }}
+          </button>
+        </footer>
+      </form>
     </section>
   </div>
 }

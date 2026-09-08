@@ -10,6 +10,7 @@
         <button
           class="tab-button"
           [class.tab-button--active]="rango() === item"
+          [disabled]="cargando()"
           type="button"
           (click)="seleccionarRango(item)"
         >
@@ -18,6 +19,15 @@
       }
     </div>
   </header>
+
+  @if (error()) {
+    <div class="report-status report-status--error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="recargar()">Reintentar</button>
+    </div>
+  } @else if (cargando()) {
+    <div class="report-status" role="status">Actualizando datos desde el servidor...</div>
+  }
 
   <div class="kpi-grid">
     <div class="kpi-card">

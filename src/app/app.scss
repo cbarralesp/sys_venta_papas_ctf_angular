@@ -15,7 +15,9 @@
 }
 
 .sidebar__close { display: none; margin-left: auto; border: 0; background: none; color: var(--muted); font-size: 31px; cursor: pointer; }
-.navigation { display: grid; gap: 8px; margin-top: 34px; }
+
+/* Navigation scrolls if content is too tall */
+.navigation { display: grid; gap: 8px; margin-top: 34px; flex: 1; overflow-y: auto; align-content: start; }
 
 .nav-item, .logout {
   display: flex; width: 100%; align-items: center; gap: 16px; border: 0; background: transparent;
@@ -29,7 +31,19 @@
   &--active { color: var(--orange); background: var(--orange-soft); font-weight: 650; }
 }
 
-.logout { gap: 15px; margin-top: auto; padding: 12px; font-size: 13px; &:hover { color: #d92d20; } }
+.account-link { flex-shrink: 0; margin-top: 8px; border-top: 1px solid var(--border); border-radius: 0 0 10px 10px; }
+
+/* Logout always visible at bottom with separator */
+.logout {
+  flex-shrink: 0;
+  gap: 15px;
+  margin-top: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  &:hover { color: #d92d20; }
+}
+
 .workspace { width: calc(100% - 264px); min-width: 0; margin-left: 264px; }
 .main-content { min-height: 100dvh; }
 .mobile-header, .mobile-overlay { display: none; }

@@ -20,4 +20,7 @@ export interface AjustesNegocio {
   informacion: InformacionNegocio;
   operativas: PreferenciasOperativas;
   notificaciones: PreferenciasNotificaciones;
+  actualizadoEn: Date;
+  actualizadoPor: string;
+  version: number;
 }

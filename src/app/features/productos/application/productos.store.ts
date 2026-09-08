@@ -9,6 +9,11 @@ export class ProductosStore {
   private readonly productosService = inject(ProductosService);
 
   /** Alias reactivos al servicio compartido */
+  readonly error = this.productosService.error;
+  readonly cargando = this.productosService.cargando;
+  readonly guardando = this.productosService.guardando;
+  recargar(): Promise<void> { return this.productosService.recargar(); }
+
   readonly categorias = this.productosService.categorias;
   readonly productos = this.productosService.productos;
   readonly categoriaActiva = signal<FiltroCategoria>('Todos');
@@ -53,33 +58,36 @@ export class ProductosStore {
 
   // ── Categorías (delegadas al servicio) ─────────────────────────────────────
 
-  crearCategoria(nombre: CategoriaProducto): void {
-    this.productosService.crearCategoria(nombre);
-    this.categoriaActiva.set(nombre);
+  async crearCategoria(nombre: CategoriaProducto): Promise<boolean> {
+    const ok = await this.productosService.crearCategoria(nombre);
+    if (ok) this.categoriaActiva.set(nombre);
+    return ok;
   }
 
-  editarCategoria(categoriaActual: CategoriaProducto, nuevoNombre: CategoriaProducto): void {
-    this.productosService.editarCategoria(categoriaActual, nuevoNombre);
-    this.categoriaActiva.set(nuevoNombre);
+  async editarCategoria(categoriaActual: CategoriaProducto, nuevoNombre: CategoriaProducto): Promise<boolean> {
+    const ok = await this.productosService.editarCategoria(categoriaActual, nuevoNombre);
+    if (ok) this.categoriaActiva.set(nuevoNombre);
+    return ok;
   }
 
-  eliminarCategoria(categoria: CategoriaProducto): void {
-    if (!this.categoriaDisponibleParaEliminar(categoria)) return;
-    this.productosService.eliminarCategoria(categoria);
-    if (this.categoriaActiva() === categoria) this.categoriaActiva.set('Todos');
+  async eliminarCategoria(categoria: CategoriaProducto): Promise<boolean> {
+    if (!this.categoriaDisponibleParaEliminar(categoria)) return false;
+    const ok = await this.productosService.eliminarCategoria(categoria);
+    if (ok && this.categoriaActiva() === categoria) this.categoriaActiva.set('Todos');
+    return ok;
   }
 
   // ── Productos (delegados al servicio) ──────────────────────────────────────
 
-  crearProducto(comando: ProductoCommand): void {
-    this.productosService.crearProducto(comando);
+  crearProducto(comando: ProductoCommand): Promise<boolean> {
+    return this.productosService.crearProducto(comando);
   }
 
-  editarProducto(id: number, cambios: ProductoCommand): void {
-    this.productosService.editarProducto(id, cambios);
+  editarProducto(id: number, cambios: ProductoCommand): Promise<boolean> {
+    return this.productosService.editarProducto(id, cambios);
   }
 
-  eliminarProducto(id: number): void {
-    this.productosService.eliminarProducto(id);
+  eliminarProducto(id: number): Promise<boolean> {
+    return this.productosService.eliminarProducto(id);
   }
 }

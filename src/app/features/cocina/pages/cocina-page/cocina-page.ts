@@ -19,29 +19,51 @@ export class Cocina implements OnInit {
   readonly listos = this.cocinaStore.listos;
   readonly pedidosActivos = this.cocinaStore.pedidosActivos;
   readonly completadosHoy = this.cocinaStore.completadosHoy;
+  readonly guardando = this.cocinaStore.guardando;
+  readonly error = this.cocinaStore.error;
+  readonly errorMetricas = this.cocinaStore.errorMetricas;
+  readonly tiempoEstimadoPreparacionMin = this.cocinaStore.tiempoEstimadoPreparacionMin;
+  readonly fechaMetricas = this.cocinaStore.fechaMetricas;
+  readonly tiempoPromedioPreparacionMin = this.cocinaStore.tiempoPromedioPreparacionMin;
 
   ngOnInit(): void {
     const intervalId = setInterval(() => this.cocinaStore.actualizarReloj(), 1000);
-    this.destroyRef.onDestroy(() => clearInterval(intervalId));
+    const syncIntervalId = setInterval(() => void this.cocinaStore.sincronizar(), 5000);
+    this.destroyRef.onDestroy(() => {
+      clearInterval(intervalId);
+      clearInterval(syncIntervalId);
+    });
   }
 
-  comenzarPreparacion(pedido: PedidoCocina): void {
-    this.cocinaStore.comenzarPreparacion(pedido.id);
+  async comenzarPreparacion(pedido: PedidoCocina): Promise<void> {
+    await this.cocinaStore.comenzarPreparacion(pedido.id);
   }
 
-  marcarComoListo(pedido: PedidoCocina): void {
-    this.cocinaStore.marcarComoListo(pedido.id);
+  async marcarComoListo(pedido: PedidoCocina): Promise<void> {
+    await this.cocinaStore.marcarComoListo(pedido.id);
   }
 
-  entregarPedido(pedido: PedidoCocina): void {
-    this.cocinaStore.entregarPedido(pedido.id);
+  async entregarPedido(pedido: PedidoCocina): Promise<void> {
+    await this.cocinaStore.entregarPedido(pedido.id);
   }
 
   tiempoTranscurrido(pedido: PedidoCocina): string {
     return this.cocinaStore.tiempoTranscurrido(pedido);
   }
 
+  esDemorado(pedido: PedidoCocina): boolean {
+    return this.cocinaStore.esDemorado(pedido);
+  }
+
+  porcentajeTiempoEstimado(pedido: PedidoCocina): number {
+    return this.cocinaStore.porcentajeTiempoEstimado(pedido);
+  }
+
   formatearHora(fecha: Date): string {
     return this.cocinaStore.formatearHora(fecha);
+  }
+
+  formatearFechaLarga(fecha: Date): string {
+    return fecha.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 }

@@ -1,15 +1,23 @@
 <section class="kitchen-page">
+  @if (error(); as mensaje) {
+    <p role="alert">{{ mensaje }}</p>
+  }
+  @if (errorMetricas(); as mensaje) {
+    <p role="alert">{{ mensaje }}</p>
+  }
   <header class="page-heading">
     <div>
       <h1>Cocina</h1>
       <p>Gestiona la preparación de los pedidos en tiempo real</p>
     </div>
     <div class="heading-actions">
-      <button class="date-picker" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-        <span>Hoy, 24 de mayo</span>
-        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
+      <div class="date-picker" aria-label="Fecha actual">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M8 3v4M16 3v4M3 10h18" />
+        </svg>
+        <span>{{ formatearFechaLarga(fechaMetricas()) }}</span>
+      </div>
       <div class="active-badge">
         <i></i>
         {{ pedidosActivos() }} pedidos activos
@@ -47,7 +55,7 @@
       <div>
         <strong>Completados hoy</strong>
         <b>{{ completadosHoy() }}</b>
-        <small>Pedidos entregados</small>
+        <small>Promedio: {{ tiempoPromedioPreparacionMin() }} min</small>
       </div>
     </div>
   </div>
@@ -57,7 +65,7 @@
       <h2>Pendientes ({{ pendientes().length }})</h2>
       <div class="board-column__body">
         @for (pedido of pendientes(); track pedido.id) {
-          <article class="order-card">
+          <article class="order-card" [class.order-card--delayed]="esDemorado(pedido)">
             <header>
               <strong>#{{ pedido.numero }}</strong>
               <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
@@ -72,13 +80,24 @@
             </div>
             <div class="order-card__meta">
               <span>Solicitado por: {{ pedido.solicitadoPor }}</span>
-              <b class="badge badge--pending">PENDIENTE</b>
+              @if (esDemorado(pedido)) {
+                <b class="badge badge--delayed">DEMORADO</b>
+              } @else {
+                <b class="badge badge--pending">PENDIENTE</b>
+              }
             </div>
-            <button class="action-button action-button--start" type="button" (click)="comenzarPreparacion(pedido)">
+            <button
+              class="action-button action-button--start"
+              type="button"
+              (click)="comenzarPreparacion(pedido)"
+              [disabled]="guardando()"
+            >
               Comenzar preparación
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
           </article>
+        } @empty {
+          <p class="column-empty">No hay pedidos pendientes.</p>
         }
       </div>
     </section>
@@ -87,7 +106,7 @@
       <h2>En preparación ({{ enPreparacion().length }})</h2>
       <div class="board-column__body">
         @for (pedido of enPreparacion(); track pedido.id) {
-          <article class="order-card">
+          <article class="order-card" [class.order-card--delayed]="esDemorado(pedido)">
             <header>
               <strong>#{{ pedido.numero }}</strong>
               <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
@@ -102,21 +121,33 @@
             </div>
             <div class="order-card__meta">
               <span>Solicitado por: {{ pedido.solicitadoPor }}</span>
-              <b class="badge badge--preparing">EN PREPARACIÓN</b>
+              @if (esDemorado(pedido)) {
+                <b class="badge badge--delayed">DEMORADO</b>
+              } @else {
+                <b class="badge badge--preparing">EN PREPARACIÓN</b>
+              }
             </div>
-            <div class="timer-box">
+            <div class="timer-box" [class.timer-box--delayed]="esDemorado(pedido)">
               <span aria-hidden="true">🍳</span>
               <div>
                 <strong>Preparando...</strong>
-                <small>Tiempo transcurrido</small>
+                <small>Meta: {{ tiempoEstimadoPreparacionMin() }} min</small>
               </div>
               <b>{{ tiempoTranscurrido(pedido) }}</b>
+              <i class="timer-box__progress" [style.width.%]="porcentajeTiempoEstimado(pedido)"></i>
             </div>
-            <button class="action-button action-button--ready" type="button" (click)="marcarComoListo(pedido)">
+            <button
+              class="action-button action-button--ready"
+              type="button"
+              (click)="marcarComoListo(pedido)"
+              [disabled]="guardando()"
+            >
               Marcar como listo
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
             </button>
           </article>
+        } @empty {
+          <p class="column-empty">No hay pedidos en preparación.</p>
         }
       </div>
     </section>
@@ -139,14 +170,23 @@
               </ul>
             </div>
             <div class="order-card__meta">
-              <span>Listo desde: {{ pedido.horaListo ? formatearHora(pedido.horaListo) : '' }}</span>
+              <span
+                >Listo desde: {{ pedido.horaListo ? formatearHora(pedido.horaListo) : '' }}</span
+              >
               <b class="badge badge--ready">LISTO</b>
             </div>
-            <button class="action-button action-button--deliver" type="button" (click)="entregarPedido(pedido)">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <button
+              class="action-button action-button--deliver"
+              type="button"
+              (click)="entregarPedido(pedido)"
+              [disabled]="guardando()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
               Entregar pedido
             </button>
           </article>
+        } @empty {
+          <p class="column-empty">No hay pedidos listos.</p>
         }
       </div>
     </section>
