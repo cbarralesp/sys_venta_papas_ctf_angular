@@ -33,7 +33,6 @@ export class Finanzas {
   readonly gananciaBruta = this.finanzasStore.gananciaBruta;
   readonly gananciaNeta = this.finanzasStore.gananciaNeta;
   readonly cantidadVentas = this.finanzasStore.cantidadVentas;
-  readonly ticketPromedio = this.finanzasStore.ticketPromedio;
   readonly margenPorcentaje = this.finanzasStore.margenPorcentaje;
   readonly resumenPorCategoria = this.finanzasStore.resumenPorCategoria;
   readonly resumenPorFormaPago = this.finanzasStore.resumenPorFormaPago;

@@ -32,11 +32,10 @@ describe('FinanzasApiRepository', () => {
       desde: desde.toISOString(),
       hasta: hasta.toISOString(),
       totalIngresos: 4000,
-      totalCostos: 1800,
+      totalCostos: 0,
       totalGastos: 500,
-      gananciaBruta: 2200,
-      gananciaNeta: 1700,
-      ticketPromedio: 4000,
+      gananciaBruta: 4000,
+      gananciaNeta: 3500,
       cantidadVentas: 1,
       movimientos: [{
         id: 'VENTA-1',
@@ -44,11 +43,11 @@ describe('FinanzasApiRepository', () => {
         fecha: '2026-09-05T23:00:00Z',
         formaPago: 'Efectivo',
         monto: 4000,
-        costo: 1800,
+        costo: 0,
         categoria: 'Venta entregada',
         tipo: 'Venta',
       }],
-      ventasPorCategoria: [{ categoria: 'Papas fritas', ingresos: 4000, costos: 1800, ganancia: 2200 }],
+      ventasPorCategoria: [{ categoria: 'Papas fritas', ingresos: 4000, costos: 0, ganancia: 4000 }],
       ventasPorFormaPago: [{ formaPago: 'Efectivo', total: 4000, cantidad: 1 }],
     });
 
@@ -56,7 +55,7 @@ describe('FinanzasApiRepository', () => {
     expect(resumen.movimientos[0].fecha).toBeInstanceOf(Date);
     expect(resumen.movimientos[0].tipo).toBe('Venta');
     expect(resumen.totalIngresos).toBe(4000);
-    expect(resumen.gananciaNeta).toBe(1700);
+    expect(resumen.gananciaNeta).toBe(3500);
   });
 
   it('crea y elimina un gasto mediante el contrato HTTP', async () => {

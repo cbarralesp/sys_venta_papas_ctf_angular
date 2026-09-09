@@ -77,7 +77,6 @@ export class CajaStore {
 
   readonly pedidosHoy = computed(() => this.metricasService.metricas().pedidosCreados);
   readonly ventasHoy = computed(() => this.metricasService.metricas().totalVentas);
-  readonly ticketPromedioHoy = computed(() => this.metricasService.metricas().ticketPromedio);
 
   seleccionarCategoria(categoria: FiltroCategoria): void {
     this.categoriaActiva.set(categoria);
@@ -182,7 +181,10 @@ export class CajaStore {
     if (creado) {
       this.idempotencyKey = crypto.randomUUID();
       this.limpiarPedido();
-      void this.metricasService.cargar();
+      await Promise.all([
+        this.metricasService.cargar(),
+        this.cargarSesionCaja(),
+      ]);
     }
     return creado;
   }

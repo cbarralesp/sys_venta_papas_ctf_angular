@@ -71,7 +71,13 @@
               <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
             </header>
             <div class="order-card__items">
-              <span class="order-card__icon" aria-hidden="true">{{ pedido.items[0].icono }}</span>
+              <span class="order-card__icon" aria-hidden="true">
+                @if (pedido.items[0].icono.startsWith('/')) {
+                  <img class="food-icon-img" [src]="pedido.items[0].icono" [alt]="pedido.items[0].nombre" />
+                } @else {
+                  {{ pedido.items[0].icono }}
+                }
+              </span>
               <ul>
                 @for (item of pedido.items; track item.nombre) {
                   <li>{{ item.cantidad }} {{ item.nombre }}</li>
@@ -112,7 +118,13 @@
               <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
             </header>
             <div class="order-card__items">
-              <span class="order-card__icon" aria-hidden="true">{{ pedido.items[0].icono }}</span>
+              <span class="order-card__icon" aria-hidden="true">
+                @if (pedido.items[0].icono.startsWith('/')) {
+                  <img class="food-icon-img" [src]="pedido.items[0].icono" [alt]="pedido.items[0].nombre" />
+                } @else {
+                  {{ pedido.items[0].icono }}
+                }
+              </span>
               <ul>
                 @for (item of pedido.items; track item.nombre) {
                   <li>{{ item.cantidad }} {{ item.nombre }}</li>
@@ -162,7 +174,13 @@
               <span>{{ formatearHora(pedido.horaSolicitud) }}</span>
             </header>
             <div class="order-card__items">
-              <span class="order-card__icon" aria-hidden="true">{{ pedido.items[0].icono }}</span>
+              <span class="order-card__icon" aria-hidden="true">
+                @if (pedido.items[0].icono.startsWith('/')) {
+                  <img class="food-icon-img" [src]="pedido.items[0].icono" [alt]="pedido.items[0].nombre" />
+                } @else {
+                  {{ pedido.items[0].icono }}
+                }
+              </span>
               <ul>
                 @for (item of pedido.items; track item.nombre) {
                   <li>{{ item.cantidad }} {{ item.nombre }}</li>

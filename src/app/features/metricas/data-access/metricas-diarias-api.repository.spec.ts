@@ -33,7 +33,6 @@ describe('MetricasDiariasApiRepository', () => {
       entregados: 2,
       cancelados: 0,
       totalVentas: 8000,
-      ticketPromedio: 4000,
       tiempoPromedioPreparacionMin: 7,
     });
 

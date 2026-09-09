@@ -11,11 +11,10 @@ describe('FinanzasStore', () => {
     desde: new Date('2026-09-01T00:00:00-04:00'),
     hasta: new Date('2026-09-07T12:00:00-04:00'),
     totalIngresos: 10000,
-    totalCostos: 4000,
+    totalCostos: 0,
     totalGastos: 1000,
-    gananciaBruta: 6000,
-    gananciaNeta: 5000,
-    ticketPromedio: 5000,
+    gananciaBruta: 10000,
+    gananciaNeta: 9000,
     cantidadVentas: 2,
     movimientos: [],
     ventasPorCategoria: [],
@@ -41,7 +40,7 @@ describe('FinanzasStore', () => {
     const store = TestBed.inject(FinanzasStore);
     await Promise.resolve();
     expect(store.totalIngresos()).toBe(10000);
-    expect(store.margenPorcentaje()).toBe(50);
+    expect(store.margenPorcentaje()).toBe(90);
   });
 
   it('registra un gasto y vuelve a consultar el resumen', async () => {

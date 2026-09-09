@@ -16,7 +16,6 @@ describe('MetricasDiariasService', () => {
     entregados: 1,
     cancelados: 0,
     totalVentas: 4000,
-    ticketPromedio: 4000,
     tiempoPromedioPreparacionMin: 8,
   };
   const repository = {

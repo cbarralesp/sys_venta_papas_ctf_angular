@@ -14,7 +14,6 @@ const METRICAS_VACIAS: MetricasDiarias = {
   entregados: 0,
   cancelados: 0,
   totalVentas: 0,
-  ticketPromedio: 0,
   tiempoPromedioPreparacionMin: 0,
 };
 

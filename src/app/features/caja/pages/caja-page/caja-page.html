@@ -5,25 +5,61 @@
       <p>Crea un nuevo pedido y envíalo a cocina</p>
     </div>
     <div class="stats">
-      <button class="history-button" type="button" (click)="mostrarHistorial()">
-        <span>Turnos</span><strong>Ver historial</strong>
-      </button>
       @if (sesionCaja(); as sesion) {
-        <button class="cash-session cash-session--open" type="button" (click)="mostrarCierre()">
-          <span>Caja abierta</span><strong>{{ formatPrice(sesion.efectivoEsperado) }}</strong>
-        </button>
-        <button class="reset-shift-button" type="button" (click)="mostrarReinicio()">
-          <span>Turno #{{ sesion.id }}</span><strong>Reiniciar</strong>
-        </button>
-        @if (puedeEliminarTurnos()) {
-          <button class="delete-shift-button" type="button" (click)="eliminarTurno(sesion.id)">
-            <span>Turno #{{ sesion.id }}</span><strong>Eliminar</strong>
+        <div class="shift-card">
+          <div class="shift-card__summary">
+            <span>Caja</span>
+            <strong>{{ formatPrice(sesion.efectivoEsperado) }}</strong>
+          </div>
+          <button class="shift-card__close" type="button" (click)="mostrarCierre()">
+            Cerrar caja
           </button>
-        }
+          <div class="shift-menu">
+            <button
+              class="shift-menu__trigger"
+              type="button"
+              aria-haspopup="menu"
+              aria-label="Gestionar turno"
+              [attr.aria-expanded]="menuTurnoAbierto()"
+              (click)="alternarMenuTurno()"
+            >
+              <span aria-hidden="true">⋯</span>
+            </button>
+            @if (menuTurnoAbierto()) {
+              <div class="shift-menu__panel" role="menu">
+                <button type="button" role="menuitem" (click)="mostrarHistorial()">
+                  Ver historial
+                </button>
+                <button type="button" role="menuitem" (click)="mostrarReinicio()">
+                  Reiniciar turno
+                </button>
+                @if (puedeEliminarTurnos()) {
+                  <button
+                    class="shift-menu__danger"
+                    type="button"
+                    role="menuitem"
+                    (click)="eliminarTurno(sesion.id)"
+                  >
+                    Eliminar turno
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
       } @else {
-        <button class="cash-session" type="button" (click)="mostrarApertura()">
-          <span>Caja cerrada</span><strong>Abrir caja</strong>
-        </button>
+        <div class="shift-card shift-card--closed">
+          <div class="shift-card__summary">
+            <span>Caja</span>
+            <strong>Caja cerrada</strong>
+          </div>
+          <button class="shift-card__close" type="button" (click)="mostrarApertura()">
+            Abrir caja
+          </button>
+          <button class="shift-menu__trigger" type="button" (click)="mostrarHistorial()">
+            Historial
+          </button>
+        </div>
       }
       <div class="stat-card">
         <span>Pedidos hoy</span>
@@ -32,7 +68,6 @@
       <div class="stat-card stat-card--sales">
         <span>Ventas hoy</span>
         <strong>{{ formatPrice(ventasHoy()) }}</strong>
-        <small>Ticket {{ formatPrice(ticketPromedioHoy()) }}</small>
       </div>
     </div>
   </header>
@@ -83,12 +118,19 @@
         @for (producto of productosFiltrados(); track producto.id) {
           <button
             class="product-card"
+            [class.product-card--salchipapas]="producto.nombre.toLowerCase().includes('salchipapas')"
             type="button"
             (click)="agregarProducto(producto)"
             [disabled]="cantidadEnCarrito(producto) >= 99"
           >
             <span class="product-card__add" aria-hidden="true">+</span>
-            <span class="product-card__icon" aria-hidden="true">{{ producto.icono }}</span>
+            <span class="product-card__icon" aria-hidden="true">
+              @if (producto.icono.startsWith('/')) {
+                <img class="food-icon-img" [src]="producto.icono" [alt]="producto.nombre" />
+              } @else {
+                {{ producto.icono }}
+              }
+            </span>
             <strong>{{ producto.nombre }}</strong>
             <span class="product-card__price">{{ formatPrice(producto.precioVenta) }}</span>
             @if (cantidadEnCarrito(producto) > 0) {
@@ -137,7 +179,13 @@
       <div class="order-items">
         @for (item of carrito(); track item.productoId) {
           <div class="order-item">
-            <span class="order-item__icon" aria-hidden="true">{{ item.icono }}</span>
+            <span class="order-item__icon" aria-hidden="true">
+              @if (item.icono.startsWith('/')) {
+                <img class="food-icon-img" [src]="item.icono" [alt]="item.nombre" />
+              } @else {
+                {{ item.icono }}
+              }
+            </span>
             <div class="order-item__info">
               <strong>{{ item.nombre }}</strong>
               <span class="order-item__price">{{

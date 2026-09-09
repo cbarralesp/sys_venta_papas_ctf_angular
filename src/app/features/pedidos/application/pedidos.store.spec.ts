@@ -29,7 +29,6 @@ describe('PedidosStore', () => {
       entregados: 1,
       cancelados: 0,
       totalVentas: 2000,
-      ticketPromedio: 2000,
       tiempoPromedioPreparacionMin: 5,
     }),
     error: signal<string | null>(null),

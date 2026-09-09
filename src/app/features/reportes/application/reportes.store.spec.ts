@@ -13,7 +13,6 @@ describe('ReportesStore', () => {
     totalVentas: 6000,
     totalPedidos: 2,
     promedioDiario: 3000,
-    ticketPromedio: 3000,
     ventasDiarias: [
       { fecha: new Date('2026-09-06'), totalVentas: 2000, cantidadPedidos: 1 },
       { fecha: new Date('2026-09-07'), totalVentas: 4000, cantidadPedidos: 1 },

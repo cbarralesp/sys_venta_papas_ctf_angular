@@ -13,7 +13,6 @@ const RESUMEN_VACIO: ResumenFinanciero = {
   totalGastos: 0,
   gananciaBruta: 0,
   gananciaNeta: 0,
-  ticketPromedio: 0,
   cantidadVentas: 0,
   movimientos: [],
   ventasPorCategoria: [],
@@ -38,7 +37,6 @@ export class FinanzasStore {
   readonly gananciaBruta = computed(() => this.resumen().gananciaBruta);
   readonly gananciaNeta = computed(() => this.resumen().gananciaNeta);
   readonly cantidadVentas = computed(() => this.resumen().cantidadVentas);
-  readonly ticketPromedio = computed(() => this.resumen().ticketPromedio);
   readonly margenPorcentaje = computed(() => {
     const ingresos = this.totalIngresos();
     return ingresos === 0 ? 0 : Math.round((this.gananciaNeta() / ingresos) * 100);

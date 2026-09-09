@@ -4,7 +4,6 @@ export interface ReporteVentasResponseDto {
   totalVentas: number;
   totalPedidos: number;
   promedioDiario: number;
-  ticketPromedio: number;
   ventasDiarias: VentaDiariaResponseDto[];
   productosVendidos: ProductoVendidoResponseDto[];
 }

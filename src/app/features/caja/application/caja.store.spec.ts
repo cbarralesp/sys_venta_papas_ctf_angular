@@ -24,7 +24,6 @@ describe('CajaStore', () => {
     entregados: 0,
     cancelados: 0,
     totalVentas: 0,
-    ticketPromedio: 0,
     tiempoPromedioPreparacionMin: 0,
   });
   const repository = {
@@ -126,6 +125,10 @@ describe('CajaStore', () => {
   });
 
   it('envia el tipo de entrega predeterminado al confirmar', async () => {
+    repository.consultarActual.mockReturnValue(of(sesionAbierta({
+      ventasEfectivo: 2000,
+      efectivoEsperado: 17000,
+    })));
     const store = TestBed.inject(CajaStore);
     store.sesionCaja.set(sesionAbierta());
     store.carrito.set([
@@ -143,6 +146,9 @@ describe('CajaStore', () => {
     expect(pedidosService.crear).toHaveBeenCalledWith(
       expect.objectContaining({ tipoEntrega: 'Para llevar' }),
     );
+    expect(metricasService.cargar).toHaveBeenCalled();
+    expect(repository.consultarActual).toHaveBeenCalledTimes(2);
+    expect(store.sesionCaja()?.efectivoEsperado).toBe(17000);
   });
 
   it('bloquea ventas cuando el turno abierto pertenece a otro dia', async () => {

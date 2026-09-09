@@ -35,7 +35,6 @@ describe('ReportesApiRepository', () => {
       totalVentas: 4000,
       totalPedidos: 1,
       promedioDiario: 666.67,
-      ticketPromedio: 4000,
       ventasDiarias: [{ fecha: '2026-09-06', totalVentas: 4000, cantidadPedidos: 1 }],
       productosVendidos: [{
         productoId: 1,

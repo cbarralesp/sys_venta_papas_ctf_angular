@@ -19,7 +19,6 @@ export class Reportes {
   readonly totalVentas = this.reportesStore.totalVentas;
   readonly totalPedidos = this.reportesStore.totalPedidos;
   readonly promedioDiario = this.reportesStore.promedioDiario;
-  readonly ticketPromedio = this.reportesStore.ticketPromedio;
   readonly mejorDia = this.reportesStore.mejorDia;
   readonly productosOrdenados = this.reportesStore.productosOrdenados;
   readonly cargando = this.reportesStore.cargando;

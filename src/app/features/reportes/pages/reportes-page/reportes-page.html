@@ -40,11 +40,6 @@
       <strong>{{ formatPrice(promedioDiario()) }}</strong>
       <small>Por día</small>
     </div>
-    <div class="kpi-card">
-      <span>Ticket promedio</span>
-      <strong>{{ formatPrice(ticketPromedio()) }}</strong>
-      <small>Por pedido</small>
-    </div>
     <div class="kpi-card kpi-card--highlight">
       <span>Mejor día</span>
       @if (mejorDia(); as dia) {
@@ -89,7 +84,13 @@
           @for (producto of productosOrdenados(); track producto.nombre; let indice = $index) {
             <div class="ranking-row">
               <span class="ranking-row__position">{{ indice + 1 }}</span>
-              <span class="ranking-row__icon" aria-hidden="true">{{ producto.icono }}</span>
+              <span class="ranking-row__icon" aria-hidden="true">
+                @if (producto.icono.startsWith('/')) {
+                  <img class="food-icon-img" [src]="producto.icono" [alt]="producto.nombre" />
+                } @else {
+                  {{ producto.icono }}
+                }
+              </span>
               <div class="ranking-row__info">
                 <strong>{{ producto.nombre }}</strong>
                 <span>{{ producto.cantidadVendida }} vendidos</span>

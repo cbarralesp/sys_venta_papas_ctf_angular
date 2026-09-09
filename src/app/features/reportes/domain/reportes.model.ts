@@ -21,7 +21,6 @@ export interface ReporteVentas {
   totalVentas: number;
   totalPedidos: number;
   promedioDiario: number;
-  ticketPromedio: number;
   ventasDiarias: VentaDiaria[];
   productosVendidos: ProductoVendido[];
 }

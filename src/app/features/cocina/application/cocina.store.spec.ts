@@ -18,7 +18,7 @@ describe('CocinaStore', () => {
   const metricasService = {
     metricas: signal({
       fecha: new Date('2026-09-06T00:00:00'), pedidosCreados: 0, pendientes: 0, enPreparacion: 0,
-      listos: 0, entregados: 0, cancelados: 0, totalVentas: 0, ticketPromedio: 0,
+      listos: 0, entregados: 0, cancelados: 0, totalVentas: 0,
       tiempoPromedioPreparacionMin: 0,
     }),
     error: signal<string | null>(null),

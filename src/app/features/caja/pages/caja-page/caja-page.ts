@@ -27,7 +27,6 @@ export class Caja {
   readonly subtotal = this.cajaStore.subtotal;
   readonly pedidosHoy = this.cajaStore.pedidosHoy;
   readonly ventasHoy = this.cajaStore.ventasHoy;
-  readonly ticketPromedioHoy = this.cajaStore.ticketPromedioHoy;
   readonly formaPago = this.cajaStore.formaPago;
   readonly avisoCarrito = this.cajaStore.avisoCarrito;
   readonly nota = this.cajaStore.nota;
@@ -46,6 +45,7 @@ export class Caja {
   readonly puedeEliminarTurnos = () => this.authService.tieneRol('ADMIN');
   readonly modalCaja = signal<'abrir' | 'cerrar' | 'reiniciar' | null>(null);
   readonly historialVisible = signal(false);
+  readonly menuTurnoAbierto = signal(false);
   readonly saldoInicial = signal(0);
   readonly efectivoDeclarado = signal(0);
   readonly saldoInicialNuevo = signal(0);
@@ -102,11 +102,13 @@ export class Caja {
   }
 
   mostrarCierre(): void {
+    this.menuTurnoAbierto.set(false);
     this.efectivoDeclarado.set(this.sesionCaja()?.efectivoEsperado ?? 0);
     this.modalCaja.set('cerrar');
   }
 
   mostrarReinicio(): void {
+    this.menuTurnoAbierto.set(false);
     this.efectivoDeclarado.set(this.sesionCaja()?.efectivoEsperado ?? 0);
     this.saldoInicialNuevo.set(0);
     this.contrasenaReinicio.set('');
@@ -115,6 +117,10 @@ export class Caja {
 
   cerrarModalCaja(): void {
     if (!this.operandoCaja()) this.modalCaja.set(null);
+  }
+
+  alternarMenuTurno(): void {
+    this.menuTurnoAbierto.update((abierto) => !abierto);
   }
 
   async confirmarApertura(): Promise<void> {
@@ -151,6 +157,7 @@ export class Caja {
   }
 
   async mostrarHistorial(): Promise<void> {
+    this.menuTurnoAbierto.set(false);
     this.historialVisible.set(true);
     await this.cajaStore.cargarHistorial();
   }
@@ -165,6 +172,7 @@ export class Caja {
   }
 
   async eliminarTurno(id: number): Promise<void> {
+    this.menuTurnoAbierto.set(false);
     const confirmado = window.confirm(
       '¿Eliminar este turno? Solo se puede borrar si no tiene ventas ni gastos asociados.',
     );

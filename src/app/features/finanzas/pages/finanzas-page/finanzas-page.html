@@ -40,19 +40,14 @@
       <small>Gastos registrados</small>
     </div>
     <div class="kpi-card">
-      <span>Ganancia bruta</span>
+      <span>Ganancia de ventas</span>
       <strong class="kpi-card__value">{{ formatPrice(gananciaBruta()) }}</strong>
-      <small>Ingresos − costo de productos</small>
+      <small>Total vendido sin descontar productos</small>
     </div>
     <div class="kpi-card kpi-card--highlight">
       <span>Ganancia neta</span>
       <strong class="kpi-card__value">{{ formatPrice(gananciaNeta()) }}</strong>
-      <small>Margen {{ margenPorcentaje() }}%</small>
-    </div>
-    <div class="kpi-card">
-      <span>Ticket promedio</span>
-      <strong class="kpi-card__value">{{ formatPrice(ticketPromedio()) }}</strong>
-      <small>Por pedido</small>
+      <small>Ventas − gastos registrados · Margen {{ margenPorcentaje() }}%</small>
     </div>
   </div>
 

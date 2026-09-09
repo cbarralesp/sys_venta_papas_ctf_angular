@@ -7,6 +7,5 @@ export interface MetricasDiarias {
   entregados: number;
   cancelados: number;
   totalVentas: number;
-  ticketPromedio: number;
   tiempoPromedioPreparacionMin: number;
 }

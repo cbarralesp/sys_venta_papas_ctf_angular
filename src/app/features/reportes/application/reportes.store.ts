@@ -11,7 +11,6 @@ const REPORTE_VACIO: ReporteVentas = {
   totalVentas: 0,
   totalPedidos: 0,
   promedioDiario: 0,
-  ticketPromedio: 0,
   ventasDiarias: [],
   productosVendidos: [],
 };
@@ -30,7 +29,6 @@ export class ReportesStore {
   readonly totalVentas = computed(() => this.reporte().totalVentas);
   readonly totalPedidos = computed(() => this.reporte().totalPedidos);
   readonly promedioDiario = computed(() => this.reporte().promedioDiario);
-  readonly ticketPromedio = computed(() => this.reporte().ticketPromedio);
   readonly mejorDia = computed(() => {
     const ventas = this.ventasEnRango();
     if (ventas.length === 0 || ventas.every((venta) => venta.totalVentas === 0)) return null;

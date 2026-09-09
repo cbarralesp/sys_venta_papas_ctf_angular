@@ -60,7 +60,13 @@
               <tr>
                 <td data-label="Producto">
                   <div class="product-name">
-                    <span class="product-icon" aria-hidden="true">{{ producto.icono }}</span>
+                    <span class="product-icon" aria-hidden="true">
+                      @if (producto.icono.startsWith('/')) {
+                        <img class="food-icon-img" [src]="producto.icono" [alt]="producto.nombre" />
+                      } @else {
+                        {{ producto.icono }}
+                      }
+                    </span>
                     <div><strong>{{ producto.nombre }}</strong><small>{{ producto.categoria }}</small></div>
                   </div>
                 </td>

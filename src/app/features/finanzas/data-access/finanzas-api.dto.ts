@@ -6,7 +6,6 @@ export interface ResumenFinancieroResponseDto {
   totalGastos: number;
   gananciaBruta: number;
   gananciaNeta: number;
-  ticketPromedio: number;
   cantidadVentas: number;
   movimientos: MovimientoVentaResponseDto[];
   ventasPorCategoria: CategoriaFinancieraResponseDto[];
